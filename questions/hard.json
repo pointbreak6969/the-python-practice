@@ -1,0 +1,402 @@
+[
+  {
+    "id": "H001",
+    "tier": "hard",
+    "topic": "decorators",
+    "type": "write_the_code",
+    "question": "Write a decorator called logger that prints \"Calling <function name>\" before a function runs and \"Done\" after. Apply it to a function add(a, b) that returns a + b. Call add(2, 3) and print its return value.",
+    "answer": "def logger(func):\n    def wrapper(*args, **kwargs):\n        print(f\"Calling {func.__name__}\")\n        result = func(*args, **kwargs)\n        print(\"Done\")\n        return result\n    return wrapper\n\n@logger\ndef add(a, b):\n    return a + b\n\nprint(add(2, 3))",
+    "alternative_answer": null,
+    "explanation": "A decorator is a function that takes another function as an argument and returns a new wrapper function that adds behavior before and/or after the original call. The wrapper uses *args and **kwargs so it can forward any arguments to the original. func.__name__ gives the original function's name string."
+  },
+  {
+    "id": "H002",
+    "tier": "hard",
+    "topic": "generators",
+    "type": "write_the_code",
+    "question": "Write a generator function countdown(n) that yields integers from n down to 1. Iterate over countdown(5) and print each value on its own line.",
+    "answer": "def countdown(n):\n    while n >= 1:\n        yield n\n        n -= 1\n\nfor num in countdown(5):\n    print(num)",
+    "alternative_answer": null,
+    "explanation": "A generator function uses yield instead of return to produce a sequence of values one at a time. Each time next() is called (implicitly by a for loop), execution resumes right after the last yield. This makes generators memory-efficient because they produce values lazily instead of building a full list upfront."
+  },
+  {
+    "id": "H003",
+    "tier": "hard",
+    "topic": "context_managers",
+    "type": "write_the_code",
+    "question": "Use @contextlib.contextmanager to write a context manager called tag(name) that prints \"<name>\" on enter and \"</name>\" on exit. Use it with a with block that prints \"Hello\" — where name is \"div\".",
+    "answer": "from contextlib import contextmanager\n\n@contextmanager\ndef tag(name):\n    print(f\"<{name}>\")\n    yield\n    print(f\"</{name}>\")\n\nwith tag(\"div\"):\n    print(\"Hello\")",
+    "alternative_answer": null,
+    "explanation": "@contextlib.contextmanager converts a generator function into a context manager. Everything before yield runs as __enter__ logic, the yielded value (if any) is bound by as, and everything after yield runs as __exit__ logic. This is simpler than writing a full class with __enter__ and __exit__."
+  },
+  {
+    "id": "H004",
+    "tier": "hard",
+    "topic": "error_handling",
+    "type": "write_the_code",
+    "question": "Write a function safe_divide(a, b) that tries to divide a by b. If b is zero, catch the ZeroDivisionError and return the string \"Cannot divide by zero\". Use a finally block to always print \"Operation complete\". Call safe_divide(10, 0) and print its return value.",
+    "answer": "def safe_divide(a, b):\n    try:\n        return a / b\n    except ZeroDivisionError:\n        return \"Cannot divide by zero\"\n    finally:\n        print(\"Operation complete\")\n\nprint(safe_divide(10, 0))",
+    "alternative_answer": null,
+    "explanation": "The try block attempts the risky operation. The except clause catches a specific error type and provides a fallback return value. The finally clause always executes — even when a return is reached inside try or except — making it ideal for cleanup or status messages."
+  },
+  {
+    "id": "H005",
+    "tier": "hard",
+    "topic": "oop_basics",
+    "type": "write_the_code",
+    "question": "Write a class BankAccount with __init__(owner, balance=0), a deposit(amount) method that adds to the balance, and a withdraw(amount) method that subtracts from the balance but raises ValueError(\"Insufficient funds\") if the amount exceeds the balance. Create an account, deposit 100, withdraw 40, and print the balance.",
+    "answer": "class BankAccount:\n    def __init__(self, owner, balance=0):\n        self.owner = owner\n        self.balance = balance\n\n    def deposit(self, amount):\n        self.balance += amount\n\n    def withdraw(self, amount):\n        if amount > self.balance:\n            raise ValueError(\"Insufficient funds\")\n        self.balance -= amount\n\naccount = BankAccount(\"Alice\")\naccount.deposit(100)\naccount.withdraw(40)\nprint(account.balance)",
+    "alternative_answer": null,
+    "explanation": "__init__ is the constructor that sets up instance attributes via self. Instance methods receive self as their first argument, which refers to the object being operated on. Raising ValueError with a descriptive message is the standard Python pattern for signalling invalid operations."
+  },
+  {
+    "id": "H006",
+    "tier": "hard",
+    "topic": "oop_inheritance",
+    "type": "write_the_code",
+    "question": "Write a base class Animal with a method speak() that returns \"...\". Write a subclass Dog that overrides speak() to return \"Woof\". Create a Dog instance and print the result of calling speak() on it.",
+    "answer": "class Animal:\n    def speak(self):\n        return \"...\"\n\nclass Dog(Animal):\n    def speak(self):\n        return \"Woof\"\n\ndog = Dog()\nprint(dog.speak())",
+    "alternative_answer": null,
+    "explanation": "Inheritance lets a subclass reuse and extend a parent class. When Dog overrides speak(), calling the method on a Dog instance uses the subclass version, not the parent's. This is method overriding and is central to polymorphism — the same call produces different behavior depending on the object's actual type."
+  },
+  {
+    "id": "H007",
+    "tier": "hard",
+    "topic": "dunder_methods",
+    "type": "write_the_code",
+    "question": "Write a class Vector with __init__(x, y), an __add__ method that returns a new Vector whose coordinates are the element-wise sum of both vectors, and a __str__ method that returns \"Vector(x, y)\". Print the result of Vector(1, 2) + Vector(3, 4).",
+    "answer": "class Vector:\n    def __init__(self, x, y):\n        self.x = x\n        self.y = y\n\n    def __add__(self, other):\n        return Vector(self.x + other.x, self.y + other.y)\n\n    def __str__(self):\n        return f\"Vector({self.x}, {self.y})\"\n\nprint(Vector(1, 2) + Vector(3, 4))",
+    "alternative_answer": null,
+    "explanation": "Dunder methods let you define how your objects behave with built-in operators and functions. __add__ is called when you use the + operator between two instances. __str__ is called by print() and str() to produce a human-readable representation. Both make custom classes feel like native Python types."
+  },
+  {
+    "id": "H008",
+    "tier": "hard",
+    "topic": "itertools",
+    "type": "write_the_code",
+    "question": "Import itertools.chain and use it to combine [1, 2, 3] and [4, 5, 6] into a single sequence. Print each element on its own line.",
+    "answer": "from itertools import chain\n\nfor item in chain([1, 2, 3], [4, 5, 6]):\n    print(item)",
+    "alternative_answer": null,
+    "explanation": "itertools.chain takes multiple iterables and returns an iterator that yields elements from the first, then the second, and so on — without building a new combined list. It is memory-efficient for stitching together sequences that are processed one item at a time."
+  },
+  {
+    "id": "H009",
+    "tier": "hard",
+    "topic": "functools",
+    "type": "write_the_code",
+    "question": "Use functools.partial and operator.mul to create a function called double that multiplies its argument by 2. Print double(7).",
+    "answer": "import functools\nimport operator\n\ndouble = functools.partial(operator.mul, 2)\nprint(double(7))",
+    "alternative_answer": null,
+    "explanation": "functools.partial creates a new callable by freezing one or more arguments of an existing function. operator.mul(a, b) is the function form of a * b. Fixing the first argument to 2 produces a one-argument function that always multiplies its input by 2."
+  },
+  {
+    "id": "H010",
+    "tier": "hard",
+    "topic": "closures",
+    "type": "write_the_code",
+    "question": "Write a factory function make_multiplier(n) that returns an inner function which takes one argument x and returns n * x. Store make_multiplier(3) in a variable triple and print triple(10).",
+    "answer": "def make_multiplier(n):\n    def multiplier(x):\n        return n * x\n    return multiplier\n\ntriple = make_multiplier(3)\nprint(triple(10))",
+    "alternative_answer": "def make_multiplier(n):\n    return lambda x: n * x\n\ntriple = make_multiplier(3)\nprint(triple(10))",
+    "explanation": "A closure is a function that retains access to variables from its enclosing scope, even after the outer function has returned. Here the inner function captures n from make_multiplier's local scope. triple(10) therefore computes 3 * 10 = 30 without needing n to be passed again."
+  },
+  {
+    "id": "H011",
+    "tier": "hard",
+    "topic": "decorators",
+    "type": "write_the_code",
+    "question": "Write a decorator count_calls that sets a call_count attribute to 0 on the wrapper function and increments it every time the decorated function is called. Apply it to a function greet() that prints \"Hello\". Call greet() three times and print greet.call_count.",
+    "answer": "def count_calls(func):\n    def wrapper(*args, **kwargs):\n        wrapper.call_count += 1\n        return func(*args, **kwargs)\n    wrapper.call_count = 0\n    return wrapper\n\n@count_calls\ndef greet():\n    print(\"Hello\")\n\ngreet()\ngreet()\ngreet()\nprint(greet.call_count)",
+    "alternative_answer": null,
+    "explanation": "Functions are objects in Python, so you can set attributes directly on them. The decorator initialises wrapper.call_count = 0 before returning the wrapper. Each call increments it. Because @count_calls replaces greet with wrapper, greet.call_count exposes that counter."
+  },
+  {
+    "id": "H012",
+    "tier": "hard",
+    "topic": "generators",
+    "type": "write_the_code",
+    "question": "Write a generator expression that produces the squares of numbers from 1 to 10, but only includes a square if it is odd. Print each value produced by the generator on its own line.",
+    "answer": "gen = (x**2 for x in range(1, 11) if x % 2 != 0)\nfor value in gen:\n    print(value)",
+    "alternative_answer": "for value in (x**2 for x in range(1, 11) if x**2 % 2 != 0):\n    print(value)",
+    "explanation": "A generator expression is written like a list comprehension but wrapped in parentheses instead of square brackets. It produces values lazily. Only odd numbers (1, 3, 5, 7, 9) produce odd squares, giving 1, 9, 25, 49, 81. Even numbers squared are always even so the filter x % 2 != 0 excludes them."
+  },
+  {
+    "id": "H013",
+    "tier": "hard",
+    "topic": "error_handling",
+    "type": "write_the_code",
+    "question": "Define a custom exception class NegativeValueError that inherits from ValueError. Write a function square_root(n) that raises NegativeValueError(\"Cannot take square root of negative number\") when n < 0. Call square_root(-4) inside a try/except block and print the exception message.",
+    "answer": "class NegativeValueError(ValueError):\n    pass\n\ndef square_root(n):\n    if n < 0:\n        raise NegativeValueError(\"Cannot take square root of negative number\")\n    return n ** 0.5\n\ntry:\n    square_root(-4)\nexcept NegativeValueError as e:\n    print(e)",
+    "alternative_answer": null,
+    "explanation": "Custom exceptions are created by subclassing a built-in exception. Inheriting from ValueError means callers can catch NegativeValueError specifically or catch the broader ValueError. The exception message is stored as the first argument and accessible via str(e) or e.args[0]."
+  },
+  {
+    "id": "H014",
+    "tier": "hard",
+    "topic": "dunder_methods",
+    "type": "write_the_code",
+    "question": "Write a class Stack backed by a list. Implement push(item), pop(), __len__ (returns the number of items), and __repr__ (returns \"Stack([...])\"). Push 1, 2, 3 onto a new stack, then print len(stack) and repr(stack).",
+    "answer": "class Stack:\n    def __init__(self):\n        self._items = []\n\n    def push(self, item):\n        self._items.append(item)\n\n    def pop(self):\n        return self._items.pop()\n\n    def __len__(self):\n        return len(self._items)\n\n    def __repr__(self):\n        return f\"Stack({self._items})\"\n\nstack = Stack()\nstack.push(1)\nstack.push(2)\nstack.push(3)\nprint(len(stack))\nprint(repr(stack))",
+    "alternative_answer": null,
+    "explanation": "__len__ is called by len() and must return a non-negative integer. __repr__ is called by repr() and the interactive shell — it should return a string that clearly identifies the object's contents. Implementing these dunders makes your class integrate naturally with Python's built-in functions."
+  },
+  {
+    "id": "H015",
+    "tier": "hard",
+    "topic": "decorators",
+    "type": "fill_in_the_blank",
+    "question": "Fill in the blank so the decorator correctly exposes the wrapper to callers:\ndef decorator(func):\n    def wrapper(*args, **kwargs):\n        return func(*args, **kwargs)\n    return ___",
+    "answer": "wrapper",
+    "alternative_answer": null,
+    "explanation": "A decorator must return a callable so the decorated name points to something that can be invoked. Returning wrapper — the inner function — replaces the original function with the version that adds extra behavior."
+  },
+  {
+    "id": "H016",
+    "tier": "hard",
+    "topic": "decorators",
+    "type": "fill_in_the_blank",
+    "question": "Fill in the blank to preserve the original function's __name__ and __doc__ inside the decorator:\nimport functools\ndef decorator(func):\n    @functools.___(func)\n    def wrapper(*args, **kwargs):\n        return func(*args, **kwargs)\n    return wrapper",
+    "answer": "wraps",
+    "alternative_answer": null,
+    "explanation": "Without @functools.wraps(func), the decorated function's __name__ and __doc__ become those of wrapper, which breaks introspection and debugging. @functools.wraps(func) copies those attributes from func onto wrapper automatically."
+  },
+  {
+    "id": "H017",
+    "tier": "hard",
+    "topic": "generators",
+    "type": "fill_in_the_blank",
+    "question": "Fill in the keyword that pauses the function and sends a value to the caller:\ndef gen():\n    for i in range(3):\n        ___ i",
+    "answer": "yield",
+    "alternative_answer": null,
+    "explanation": "yield suspends the generator function's execution, sends the value to the caller, and resumes from the same point on the next call to next(). Unlike return, yield does not end the function — it merely pauses it until the next value is requested."
+  },
+  {
+    "id": "H018",
+    "tier": "hard",
+    "topic": "generators",
+    "type": "fill_in_the_blank",
+    "question": "Fill in the built-in function that retrieves the next value from a generator object:\ng = countdown(3)\nprint(___(g))",
+    "answer": "next",
+    "alternative_answer": null,
+    "explanation": "next(iterator) calls the iterator's __next__ method, which resumes the generator until the next yield and returns the yielded value. When the generator is exhausted, next() raises StopIteration — unless you pass a default as the second argument, e.g. next(g, None)."
+  },
+  {
+    "id": "H019",
+    "tier": "hard",
+    "topic": "context_managers",
+    "type": "fill_in_the_blank",
+    "question": "Fill in the dunder method name that is called when Python enters the with block:\nclass CM:\n    def ___(self):\n        print(\"entering\")\n        return self\n    def __exit__(self, *args):\n        print(\"exiting\")",
+    "answer": "__enter__",
+    "alternative_answer": null,
+    "explanation": "The with statement protocol calls __enter__ at the start of the block and __exit__ at the end, regardless of whether an exception occurred. The value returned by __enter__ is bound to the variable after as."
+  },
+  {
+    "id": "H020",
+    "tier": "hard",
+    "topic": "error_handling",
+    "type": "fill_in_the_blank",
+    "question": "Fill in the variable name that binds the caught exception so it can be inspected:\ntry:\n    risky()\nexcept ValueError as ___:\n    print(e)",
+    "answer": "e",
+    "alternative_answer": null,
+    "explanation": "The as clause in an except statement binds the exception object to a name so you can inspect its message, type, or attributes. By convention e is the standard name, but any valid identifier works. The binding is only in scope inside the except block."
+  },
+  {
+    "id": "H021",
+    "tier": "hard",
+    "topic": "error_handling",
+    "type": "fill_in_the_blank",
+    "question": "Fill in the clause that always executes regardless of whether an exception occurred:\ntry:\n    open_connection()\nexcept ConnectionError:\n    print(\"failed\")\n___:\n    print(\"always runs\")",
+    "answer": "finally",
+    "alternative_answer": null,
+    "explanation": "The finally clause runs whether the try block succeeded, raised a caught exception, raised an uncaught exception, or executed a return or break. It is the standard place for cleanup actions like closing files, releasing locks, or printing status."
+  },
+  {
+    "id": "H022",
+    "tier": "hard",
+    "topic": "oop_basics",
+    "type": "fill_in_the_blank",
+    "question": "Fill in the method name that initialises instance attributes when a new object is created:\nclass Dog:\n    def ___(self, name):\n        self.name = name",
+    "answer": "__init__",
+    "alternative_answer": null,
+    "explanation": "__init__ is the initialiser method called automatically by Python after a new object is allocated. It receives the new instance as self and sets up its initial state. It does not return a value — it only mutates self."
+  },
+  {
+    "id": "H023",
+    "tier": "hard",
+    "topic": "oop_inheritance",
+    "type": "fill_in_the_blank",
+    "question": "Fill in the built-in call that gives access to the parent class so its __init__ is not skipped:\nclass Dog(Animal):\n    def __init__(self, name):\n        ___().__init__(name)\n        self.tricks = []",
+    "answer": "super()",
+    "alternative_answer": null,
+    "explanation": "super() returns a proxy object that delegates method calls to the parent class in the method resolution order. Calling super().__init__(name) runs Animal's __init__ so that the parent's setup is not skipped when the child overrides the method."
+  },
+  {
+    "id": "H024",
+    "tier": "hard",
+    "topic": "dunder_methods",
+    "type": "fill_in_the_blank",
+    "question": "Fill in the dunder method name so that print(obj) displays a human-readable string:\nclass Point:\n    def __init__(self, x, y):\n        self.x, self.y = x, y\n    def ___(self):\n        return f\"Point({self.x}, {self.y})\"",
+    "answer": "__str__",
+    "alternative_answer": null,
+    "explanation": "__str__ is called by str() and print() to get a friendly, human-readable representation. __repr__ is the other string dunder, but it targets developers and is used by repr() and the interactive shell. When __str__ is not defined, Python falls back to __repr__."
+  },
+  {
+    "id": "H025",
+    "tier": "hard",
+    "topic": "functools",
+    "type": "fill_in_the_blank",
+    "question": "Fill in the decorator name that caches return values so repeated calls with the same arguments skip recomputation:\nimport functools\n@functools.___( )\ndef fib(n):\n    if n < 2: return n\n    return fib(n - 1) + fib(n - 2)",
+    "answer": "lru_cache",
+    "alternative_answer": null,
+    "explanation": "functools.lru_cache wraps a function with a Least Recently Used cache. Repeated calls with the same arguments return the cached result immediately. This turns the naive exponential Fibonacci recursion into an O(n) computation by memoising each subproblem."
+  },
+  {
+    "id": "H026",
+    "tier": "hard",
+    "topic": "itertools",
+    "type": "fill_in_the_blank",
+    "question": "Fill in the function name so the output is [0, 1, 2, 3, 4, 5]:\nfrom itertools import ___\nprint(list(___(range(3), range(3, 6))))",
+    "answer": "chain",
+    "alternative_answer": null,
+    "explanation": "itertools.chain takes multiple iterables and returns a single iterator that yields elements from each in sequence. It never builds an intermediate combined list, making it memory-efficient for large sequences."
+  },
+  {
+    "id": "H027",
+    "tier": "hard",
+    "topic": "decorators",
+    "type": "output_prediction",
+    "question": "What does this code print?\ndef logger(func):\n    def wrapper(*args, **kwargs):\n        print(f\"Calling {func.__name__}\")\n        result = func(*args, **kwargs)\n        print(\"Done\")\n        return result\n    return wrapper\n\n@logger\ndef add(a, b):\n    return a + b\n\nprint(add(2, 3))",
+    "answer": "Calling add\nDone\n5",
+    "alternative_answer": null,
+    "explanation": "add(2, 3) actually calls wrapper(2, 3). The wrapper prints \"Calling add\", calls the original add which returns 5, prints \"Done\", then returns 5. The outer print() receives that return value and prints 5 on its own line."
+  },
+  {
+    "id": "H028",
+    "tier": "hard",
+    "topic": "generators",
+    "type": "output_prediction",
+    "question": "What does this code print?\ndef gen():\n    yield 1\n    yield 2\n    yield 3\n\ng = gen()\nprint(next(g))\nprint(next(g))",
+    "answer": "1\n2",
+    "alternative_answer": null,
+    "explanation": "Calling gen() creates the generator object without executing any code. The first next(g) runs until the first yield, producing 1. The second next(g) resumes from after the first yield and runs to the second yield, producing 2. The third yield is never reached."
+  },
+  {
+    "id": "H029",
+    "tier": "hard",
+    "topic": "oop_basics",
+    "type": "output_prediction",
+    "question": "What does this code print?\nclass Counter:\n    count = 0\n    def inc(self):\n        Counter.count += 1\n\na = Counter()\nb = Counter()\na.inc()\nb.inc()\nprint(Counter.count)",
+    "answer": "2",
+    "alternative_answer": null,
+    "explanation": "count is a class variable — it belongs to Counter itself, not to any individual instance. Both a.inc() and b.inc() modify Counter.count directly (not self.count), so both increments affect the same shared value. The final print shows 2."
+  },
+  {
+    "id": "H030",
+    "tier": "hard",
+    "topic": "oop_inheritance",
+    "type": "output_prediction",
+    "question": "What does this code print?\nclass A:\n    def hello(self):\n        return \"A\"\n\nclass B(A):\n    def hello(self):\n        return \"B\"\n\nprint(B().hello())",
+    "answer": "B",
+    "alternative_answer": null,
+    "explanation": "B overrides hello() with its own version. When hello() is called on a B instance, Python resolves the method by looking up B's class first. Since B defines hello(), Python uses that version, returning \"B\" — the parent's implementation is never reached."
+  },
+  {
+    "id": "H031",
+    "tier": "hard",
+    "topic": "dunder_methods",
+    "type": "output_prediction",
+    "question": "What does this code print?\nclass N:\n    def __init__(self, v):\n        self.v = v\n    def __add__(self, other):\n        return N(self.v + other.v)\n    def __str__(self):\n        return str(self.v)\n\nprint(N(3) + N(4))",
+    "answer": "7",
+    "alternative_answer": null,
+    "explanation": "N(3) + N(4) triggers __add__, which creates a new N object with v = 3 + 4 = 7. print() then calls __str__ on that object, which returns str(7) = \"7\". Python prints that string."
+  },
+  {
+    "id": "H032",
+    "tier": "hard",
+    "topic": "error_handling",
+    "type": "output_prediction",
+    "question": "What does this code print?\ntry:\n    x = 1 / 0\nexcept ZeroDivisionError:\n    print(\"caught\")\nfinally:\n    print(\"done\")",
+    "answer": "caught\ndone",
+    "alternative_answer": null,
+    "explanation": "1 / 0 raises ZeroDivisionError, which the except clause catches, printing \"caught\". The finally clause then runs unconditionally, printing \"done\". Because the exception was handled, execution continues normally after the entire block."
+  },
+  {
+    "id": "H033",
+    "tier": "hard",
+    "topic": "closures",
+    "type": "output_prediction",
+    "question": "What does this code print?\ndef outer(x):\n    def inner(y):\n        return x + y\n    return inner\n\nadd5 = outer(5)\nprint(add5(3))",
+    "answer": "8",
+    "alternative_answer": null,
+    "explanation": "outer(5) creates inner and returns it. At that moment, inner closes over the value x=5 from outer's scope. Calling add5(3) invokes inner(3), which computes 5 + 3 = 8. The variable x is kept alive by the closure even though outer has finished running."
+  },
+  {
+    "id": "H034",
+    "tier": "hard",
+    "topic": "itertools",
+    "type": "output_prediction",
+    "question": "What does this code print?\nfrom itertools import islice\n\ngen = (x**2 for x in range(100))\nprint(list(islice(gen, 4)))",
+    "answer": "[0, 1, 4, 9]",
+    "alternative_answer": null,
+    "explanation": "The generator expression lazily produces squares: 0, 1, 4, 9, 16, ... itertools.islice(gen, 4) takes only the first 4 values without consuming or storing the rest. list() materialises those 4 values into [0, 1, 4, 9]."
+  },
+  {
+    "id": "H035",
+    "tier": "hard",
+    "topic": "decorators",
+    "type": "spot_the_bug",
+    "question": "What does greet.__name__ print after this decorator is applied, and what single line fixes it?\ndef my_decorator(func):\n    def wrapper(*args, **kwargs):\n        return func(*args, **kwargs)\n    return wrapper\n\n@my_decorator\ndef greet():\n    \"\"\"Say hello.\"\"\"\n    print(\"Hello!\")\n\nprint(greet.__name__)",
+    "answer": "wrapper",
+    "alternative_answer": null,
+    "explanation": "Without @functools.wraps(func), the decorated name greet points to wrapper, inheriting wrapper's __name__ and __doc__. The fix is to add @functools.wraps(func) directly above def wrapper(...). This copies the original function's attributes onto wrapper so introspection and debugging tools see the correct name."
+  },
+  {
+    "id": "H036",
+    "tier": "hard",
+    "topic": "generators",
+    "type": "spot_the_bug",
+    "question": "What error is raised on the 6th iteration, and how do you guard against it?\ng = (x for x in range(5))\nfor _ in range(6):\n    print(next(g))",
+    "answer": "StopIteration",
+    "alternative_answer": null,
+    "explanation": "The generator yields values 0 through 4 (five values). The 6th call to next(g) finds no more values and raises StopIteration. A for-in loop handles this automatically, but calling next() manually does not. Guard against it by passing a sentinel default: next(g, None), which returns None instead of raising when the generator is exhausted."
+  },
+  {
+    "id": "H037",
+    "tier": "hard",
+    "topic": "oop_basics",
+    "type": "what_is_the_result",
+    "question": "What does this code print, and why is the result surprising?\nclass Dog:\n    tricks = []\n    def add_trick(self, t):\n        self.tricks.append(t)\n\na = Dog()\nb = Dog()\na.add_trick(\"roll\")\nprint(b.tricks)",
+    "answer": "['roll']",
+    "alternative_answer": null,
+    "explanation": "tricks is a class variable — a single list shared by every Dog instance. When a.add_trick(\"roll\") calls self.tricks.append(t), Python looks up tricks on the class (since it is not on the instance) and mutates that shared list in place. b.tricks sees the same object. Fix: initialise self.tricks = [] inside __init__ to give each instance its own list."
+  },
+  {
+    "id": "H038",
+    "tier": "hard",
+    "topic": "oop_inheritance",
+    "type": "spot_the_bug",
+    "question": "What error does this code raise, and why?\nclass A:\n    def __init__(self):\n        self.x = 1\n\nclass B(A):\n    def __init__(self):\n        self.y = 2\n\nb = B()\nprint(b.x)",
+    "answer": "AttributeError: 'B' object has no attribute 'x'",
+    "alternative_answer": null,
+    "explanation": "B.__init__ overrides A.__init__ completely without calling super().__init__(). That means A's initialiser never runs, so self.x is never set on the instance. The fix is to add super().__init__() as the first line of B.__init__, which runs the parent's setup before adding B-specific attributes."
+  },
+  {
+    "id": "H039",
+    "tier": "hard",
+    "topic": "error_handling",
+    "type": "spot_the_bug",
+    "question": "What happens when this code runs?\ntry:\n    raise ValueError(\"bad input\")\nexcept TypeError:\n    print(\"caught\")",
+    "answer": "ValueError propagates uncaught and terminates the program with: ValueError: bad input",
+    "alternative_answer": null,
+    "explanation": "The except clause only catches TypeError. ValueError is not a subclass of TypeError, so Python does not enter the except block. The exception continues propagating up the call stack and crashes the program. Fix by catching ValueError directly, or catching the common base Exception if multiple types are acceptable."
+  },
+  {
+    "id": "H040",
+    "tier": "hard",
+    "topic": "context_managers",
+    "type": "spot_the_bug",
+    "question": "What error does this code raise?\nclass Broken:\n    def __enter__(self):\n        return self\n\nwith Broken() as b:\n    pass",
+    "answer": "AttributeError: __exit__",
+    "alternative_answer": null,
+    "explanation": "The with statement protocol requires both __enter__ and __exit__. Python calls __exit__ at the end of every with block to handle cleanup and exception suppression. Since Broken has no __exit__, Python raises AttributeError. Fix by adding def __exit__(self, exc_type, exc_val, exc_tb): return False."
+  }
+]
