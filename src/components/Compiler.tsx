@@ -35,7 +35,6 @@ interface CompilerProps {
   question?: Question | null;
   initialCode?: string;
   onAttempt?: (passed: boolean) => void;
-  isDark?: boolean;
   onStatusChange?: (status: Status, bridgeReady: boolean, hasRun: boolean) => void;
 }
 
@@ -101,7 +100,7 @@ function debounce<T extends unknown[]>(fn: (...args: T) => void, ms: number) {
 }
 
 const Compiler = forwardRef<CompilerHandle, CompilerProps>(function Compiler(
-  { question, initialCode, onAttempt, isDark = true, onStatusChange },
+  { question, initialCode, onAttempt, onStatusChange },
   ref
 ) {
   const [code, setCode] = useState(initialCode ?? STARTER_CODE);
@@ -310,46 +309,65 @@ const Compiler = forwardRef<CompilerHandle, CompilerProps>(function Compiler(
     };
   }, []);
 
+  const isPredictionType =
+    question?.type === 'output_prediction' || question?.type === 'what_is_the_result';
+
+  const canSubmitPrediction = userPrediction.trim().length > 0;
+
   return (
-    <div className={`flex flex-col h-full ${isDark ? "dark" : ""}`}>
+    <div className="flex flex-col h-full">
       <CompilerToolbar
         status={status}
         bridgeReady={bridgeReady}
         onRun={handleRun}
         onSubmit={handleSubmit}
-        canSubmit={question?.type === 'fill_in_the_blank'
-          ? bridgeReady && status === 'idle'
-          : hasRun && bridgeReady && status === 'idle'}
+        hideRun={isPredictionType}
+        canSubmit={
+          isPredictionType
+            ? canSubmitPrediction
+            : question?.type === 'fill_in_the_blank'
+            ? bridgeReady && status === 'idle'
+            : hasRun && bridgeReady && status === 'idle'
+        }
       />
 
-      {/* Editor + Output split */}
-      <div ref={containerRef} className="flex flex-1 overflow-hidden md:flex-row flex-col">
-        {/* Editor panel */}
-        <div style={{ flexBasis: `${split}%` }} className="min-w-0 overflow-hidden min-h-[240px] md:min-h-0">
-          <EditorPanel
-            key={question?.id ?? 'default'}
-            ref={editorRef}
-            initialCode={initialCode ?? STARTER_CODE}
-            onChange={handleCodeChange}
-            onRun={handleRun}
-          />
-        </div>
-
-        {/* Drag handle */}
-        <div
-          onMouseDown={onMouseDown}
-          className="w-1 bg-border hover:bg-primary cursor-col-resize hidden md:block shrink-0 transition-colors"
+      {isPredictionType ? (
+        <OutputPredictionPanel
+          value={userPrediction}
+          onChange={setUserPrediction}
+          onSubmit={handleSubmit}
+          canSubmit={canSubmitPrediction}
         />
+      ) : (
+        /* Editor + Output split */
+        <div ref={containerRef} className="flex flex-1 overflow-hidden md:flex-row flex-col">
+          {/* Editor panel */}
+          <div style={{ flexBasis: `${split}%` }} className="min-w-0 overflow-hidden min-h-[240px] md:min-h-0">
+            <EditorPanel
+              key={question?.id ?? 'default'}
+              ref={editorRef}
+              initialCode={initialCode ?? STARTER_CODE}
+              onChange={handleCodeChange}
+              onRun={handleRun}
+            />
+          </div>
 
-        {/* Output panel */}
-        <div style={{ flexBasis: `${100 - split}%` }} className="min-w-0 overflow-hidden min-h-[180px] md:min-h-0">
-          <OutputPanel
-            lines={output}
-            inputPrompt={inputPrompt}
-            onInputSubmit={handleInputSubmit}
+          {/* Drag handle */}
+          <div
+            onMouseDown={onMouseDown}
+            className="w-1 bg-border hover:bg-primary cursor-col-resize hidden md:block shrink-0 transition-colors"
           />
+
+          {/* Output panel */}
+          <div style={{ flexBasis: `${100 - split}%` }} className="min-w-0 overflow-hidden min-h-[180px] md:min-h-0">
+            <OutputPanel
+              lines={output}
+              inputPrompt={inputPrompt}
+              onInputSubmit={handleInputSubmit}
+            />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 });

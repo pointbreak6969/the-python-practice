@@ -20,6 +20,7 @@ interface Props {
   canSubmit: boolean;
   statuses: Record<string, QuestionStatus>;
   showBackButton?: boolean;
+  hideRun?: boolean;
 }
 
 export default function AppHeader({
@@ -34,6 +35,7 @@ export default function AppHeader({
   canSubmit,
   statuses,
   showBackButton = false,
+  hideRun = false,
 }: Props) {
   const totalSolved = Object.values(statuses).filter((s) => s === 'solved').length;
 
@@ -92,29 +94,31 @@ export default function AppHeader({
         </Toggle>
 
         {/* Run + Submit buttons — only on mobile/tablet (desktop has CompilerToolbar) */}
-        <Button
-          onClick={onRun}
-          disabled={isLoading || isRunning}
-          size="sm"
-          className={cn(
-            'lg:hidden h-9',
-            isRunning || isLoading
-              ? 'bg-muted text-muted-foreground cursor-not-allowed'
-              : 'bg-green-600 hover:bg-green-700 text-white'
-          )}
-        >
-          {isRunning ? (
-            <>
-              <Spinner className="size-3.5 mr-1" />
-              Running
-            </>
-          ) : (
-            <>
-              <Play className="size-3.5 mr-1" />
-              Run
-            </>
-          )}
-        </Button>
+        {!hideRun && (
+          <Button
+            onClick={onRun}
+            disabled={isLoading || isRunning}
+            size="sm"
+            className={cn(
+              'lg:hidden h-9',
+              isRunning || isLoading
+                ? 'bg-muted text-muted-foreground cursor-not-allowed'
+                : 'bg-green-600 hover:bg-green-700 text-white'
+            )}
+          >
+            {isRunning ? (
+              <>
+                <Spinner className="size-3.5 mr-1" />
+                Running
+              </>
+            ) : (
+              <>
+                <Play className="size-3.5 mr-1" />
+                Run
+              </>
+            )}
+          </Button>
+        )}
 
         <Button
           onClick={onSubmit}

@@ -10,6 +10,7 @@ import SolutionRevealPanel from '@/components/solution/SolutionRevealPanel';
 import MobileDrawer from '@/components/layout/MobileDrawer';
 import ShortcutsHelpDialog from '@/components/ShortcutsHelpDialog';
 import { useKeyboardShortcuts } from '@/lib/hooks/useKeyboardShortcuts';
+import { useTheme } from '@/lib/hooks/useTheme';
 import type { CompilerHandle } from '@/components/Compiler';
 import type { Question, QuestionStatus } from '@/lib/types';
 import { getNextQuestion, getPrevQuestion } from '@/lib/questions';
@@ -44,7 +45,7 @@ export default function HomeClient({ questions, initialQuestionId }: Props) {
       ? initialQuestionId
       : firstId
   );
-  const [isDark, setIsDark] = useState(true);
+  const { isDark, toggle: toggleTheme } = useTheme();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(true);
@@ -181,21 +182,29 @@ export default function HomeClient({ questions, initialQuestionId }: Props) {
   });
 
   return (
-    <div className={`flex flex-col h-[100dvh] ${isDark ? 'dark' : ''}`}>
+    <div className="flex flex-col h-[100dvh]">
       <AppHeader
         isDark={isDark}
-        onToggleTheme={() => setIsDark((d) => !d)}
+        onToggleTheme={toggleTheme}
         onMobileMenuOpen={() => setIsMobileOpen(true)}
         onRun={handleRun}
         onSubmit={handleSubmit}
         onShowShortcuts={() => setIsShortcutsOpen(true)}
         isRunning={compilerStatus === 'running'}
         isLoading={compilerStatus === 'loading' || !bridgeReady}
-        canSubmit={selectedQuestion?.type === 'fill_in_the_blank'
-          ? bridgeReady && compilerStatus === 'idle'
-          : hasRun && bridgeReady && compilerStatus === 'idle'}
+        canSubmit={
+          selectedQuestion?.type === 'output_prediction' || selectedQuestion?.type === 'what_is_the_result'
+            ? true
+            : selectedQuestion?.type === 'fill_in_the_blank'
+            ? bridgeReady && compilerStatus === 'idle'
+            : hasRun && bridgeReady && compilerStatus === 'idle'
+        }
         statuses={statuses}
         showBackButton={!!initialQuestionId}
+        hideRun={
+          selectedQuestion?.type === 'output_prediction' ||
+          selectedQuestion?.type === 'what_is_the_result'
+        }
       />
 
       <div className="flex flex-1 overflow-hidden">
@@ -225,7 +234,6 @@ export default function HomeClient({ questions, initialQuestionId }: Props) {
               question={selectedQuestion}
               initialCode={savedCode}
               onAttempt={handleAttemptForCurrent}
-              isDark={isDark}
               onStatusChange={handleStatusChange}
             />
           </div>

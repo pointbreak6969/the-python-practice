@@ -13,9 +13,10 @@ interface Props {
   onRun: () => void;
   onSubmit: () => void;
   canSubmit: boolean;
+  hideRun?: boolean;
 }
 
-export default function CompilerToolbar({ status, bridgeReady, onRun, onSubmit, canSubmit }: Props) {
+export default function CompilerToolbar({ status, bridgeReady, onRun, onSubmit, canSubmit, hideRun = false }: Props) {
   const isRunning = status === 'running';
   const isLoading = status === 'loading' || !bridgeReady;
 
@@ -37,28 +38,30 @@ export default function CompilerToolbar({ status, bridgeReady, onRun, onSubmit, 
       </div>
 
       <div className="flex items-center gap-2">
-        <Button
-          onClick={onRun}
-          disabled={isLoading || isRunning}
-          size="sm"
-          className={
-            isRunning || isLoading
-              ? 'bg-muted text-muted-foreground cursor-not-allowed'
-              : 'bg-green-600 hover:bg-green-700 text-white'
-          }
-        >
-          {isRunning ? (
-            <>
-              <Spinner className="size-3.5 mr-1" />
-              Running
-            </>
-          ) : (
-            <>
-              <Play className="size-3.5 mr-1" />
-              Run
-            </>
-          )}
-        </Button>
+        {!hideRun && (
+          <Button
+            onClick={onRun}
+            disabled={isLoading || isRunning}
+            size="sm"
+            className={
+              isRunning || isLoading
+                ? 'bg-muted text-muted-foreground cursor-not-allowed'
+                : 'bg-green-600 hover:bg-green-700 text-white'
+            }
+          >
+            {isRunning ? (
+              <>
+                <Spinner className="size-3.5 mr-1" />
+                Running
+              </>
+            ) : (
+              <>
+                <Play className="size-3.5 mr-1" />
+                Run
+              </>
+            )}
+          </Button>
+        )}
 
         <Button
           onClick={onSubmit}
