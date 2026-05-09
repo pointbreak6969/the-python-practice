@@ -224,6 +224,7 @@ const Compiler = forwardRef<CompilerHandle, CompilerProps>(function Compiler(
 
   const handleRun = useCallback(() => {
     if (!bridgeRef.current) return;
+    localStorage.setItem("has_interacted", "true");
     runningQuestionRef.current = currentQuestionRef.current;
     setOutput([]);
     setInputPrompt(null);

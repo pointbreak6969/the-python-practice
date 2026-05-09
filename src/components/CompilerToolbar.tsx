@@ -46,7 +46,7 @@ export default function CompilerToolbar({ status, bridgeReady, onRun, onSubmit, 
             className={
               isRunning || isLoading
                 ? 'bg-muted text-muted-foreground cursor-not-allowed'
-                : 'bg-green-600 hover:bg-green-700 text-white'
+                : 'bg-primary hover:bg-primary/90 text-primary-foreground'
             }
           >
             {isRunning ? (
@@ -70,8 +70,8 @@ export default function CompilerToolbar({ status, bridgeReady, onRun, onSubmit, 
           variant="outline"
           className={
             canSubmit
-              ? 'border-blue-500 text-blue-500 hover:bg-blue-500/10'
-              : 'opacity-40 cursor-not-allowed'
+              ? 'border-border text-foreground hover:bg-accent'
+              : 'opacity-30 cursor-not-allowed'
           }
         >
           <SendHorizonal className="size-3.5 mr-1" />

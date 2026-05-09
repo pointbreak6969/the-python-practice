@@ -62,8 +62,8 @@ export default function AppHeader({
             <Menu className="size-4" />
           </Button>
         )}
-        <span className="font-semibold text-sm tracking-tight">
-          🐍 PyPractice
+        <span className="font-mono font-bold text-sm tracking-widest" style={{ color: '#ae6e15' }}>
+          PYPRACTICE
         </span>
         {totalSolved > 0 && (
           <span className="hidden sm:inline text-xs text-muted-foreground">
@@ -103,7 +103,7 @@ export default function AppHeader({
               'lg:hidden h-9',
               isRunning || isLoading
                 ? 'bg-muted text-muted-foreground cursor-not-allowed'
-                : 'bg-green-600 hover:bg-green-700 text-white'
+                : 'bg-primary hover:bg-primary/90 text-primary-foreground'
             )}
           >
             {isRunning ? (
@@ -128,8 +128,8 @@ export default function AppHeader({
           className={cn(
             'lg:hidden h-9',
             canSubmit
-              ? 'border-blue-500 text-blue-500 hover:bg-blue-500/10'
-              : 'opacity-40 cursor-not-allowed'
+              ? 'border-border text-foreground hover:bg-accent'
+              : 'opacity-30 cursor-not-allowed'
           )}
         >
           <SendHorizonal className="size-3.5 mr-1" />

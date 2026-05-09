@@ -34,28 +34,26 @@ interface Props {
   dbError?: string;
 }
 
-
-
 function StatusBadge({ status }: { status: QuestionStatus }) {
   if (status === 'solved') {
     return (
-      <span className="flex items-center gap-1.5 text-xs text-green-600">
-        <CheckCircle2 className="size-[18px] fill-green-500 stroke-white" strokeWidth={2.5} />
+      <span className="flex items-center gap-1.5 text-xs text-green-500">
+        <CheckCircle2 className="size-[18px] fill-green-500 stroke-[#050925]" strokeWidth={2.5} />
         Solved
       </span>
     );
   }
   if (status === 'attempted') {
     return (
-      <span className="flex items-center gap-1.5 text-xs text-red-500">
-        <XCircle className="size-[18px] fill-red-500 stroke-white" strokeWidth={2.5} />
+      <span className="flex items-center gap-1.5 text-xs text-red-400">
+        <XCircle className="size-[18px] fill-red-400 stroke-[#050925]" strokeWidth={2.5} />
         Attempted
       </span>
     );
   }
   return (
-    <span className="flex items-center gap-1.5 text-xs text-gray-400">
-      <Circle className="size-[18px] stroke-gray-400" strokeWidth={2} />
+    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+      <Circle className="size-[18px] stroke-muted-foreground" strokeWidth={2} />
       Not started
     </span>
   );
@@ -101,11 +99,13 @@ export default function DashboardClient({ questions, lang = 'python', dbError }:
   };
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-white dark:bg-gray-950 text-gray-900 dark:text-white">
+    <div className="h-screen flex flex-col overflow-hidden bg-background text-foreground">
 
         {/* ── Header ─────────────────────────────────────────────── */}
         <header className="flex items-center justify-between px-3 py-2 border-b border-border bg-background shrink-0">
-          <span className="font-semibold text-sm tracking-tight">🐍 PyPractice</span>
+          <span className="font-mono font-bold text-sm tracking-widest" style={{ color: '#ae6e15' }}>
+            PYPRACTICE
+          </span>
           <Toggle
             pressed={isDark}
             onPressedChange={toggleTheme}
@@ -124,8 +124,8 @@ export default function DashboardClient({ questions, lang = 'python', dbError }:
               href={`/${slug}`}
               className={`shrink-0 px-5 py-2.5 text-sm font-medium transition-colors border-b-2 ${
                 lang === slug
-                  ? 'border-blue-600 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40'
-                  : 'border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-accent/40'
               }`}
             >
               {label}
@@ -134,41 +134,39 @@ export default function DashboardClient({ questions, lang = 'python', dbError }:
         </nav>
 
         {/* ── Main content ───────────────────────────────────────── */}
-        <main className="flex-1 overflow-hidden p-6 md:p-10 flex flex-col min-h-0">
+        <main className="flex-1 overflow-hidden p-6 md:p-8 flex flex-col min-h-0">
           {!SUPPORTED_LANGS.has(lang) || dbError ? (
             /* ── Unsupported language / DB error ── */
             <div className="flex-1 flex items-center justify-center">
               {dbError ? (
                 <div className="text-center space-y-2">
-                  <p className="text-lg font-semibold text-gray-800 dark:text-gray-100">Database not ready</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{dbError}</p>
+                  <p className="text-lg font-semibold text-foreground">Database not ready</p>
+                  <p className="text-sm text-muted-foreground">{dbError}</p>
                 </div>
               ) : (
                 <div className="text-center space-y-2">
-                  <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">
+                  <p className="text-2xl font-bold text-foreground">
                     {LANGUAGES.find((l) => l.slug === lang)?.label ?? lang} — Coming Soon
                   </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">We&apos;re working on it.</p>
+                  <p className="text-sm text-muted-foreground">We&apos;re working on it.</p>
                 </div>
               )}
             </div>
           ) : (
             /* ── Python dashboard ── */
-            <div
-              className="flex-1 flex flex-col min-h-0 rounded-2xl border-2 overflow-hidden bg-gray-50 dark:bg-gray-900"
-              style={{ borderColor: 'var(--sky-aqua)' }}
-            >
+            <div className="flex-1 flex flex-col min-h-0 rounded-xl border border-border overflow-hidden bg-background">
+
               {/* Tier filter row */}
-              <div className="shrink-0 flex items-center justify-between gap-4 px-5 py-4 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
+              <div className="shrink-0 flex items-center justify-between gap-4 px-5 py-3.5 bg-card border-b border-border">
                 <div className="flex items-center gap-2 flex-wrap">
                   {TIER_ORDER.map((tier) => (
                     <button
                       key={tier}
                       onClick={() => { setActiveTier(tier); setActiveType(null); }}
-                      className={`px-5 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                      className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${
                         activeTier === tier
-                          ? 'bg-blue-600 text-white shadow-sm'
-                          : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-background text-muted-foreground border border-border hover:text-foreground hover:border-foreground/20'
                       }`}
                     >
                       {TIER_LABELS[tier]}
@@ -180,10 +178,10 @@ export default function DashboardClient({ questions, lang = 'python', dbError }:
                 <div ref={filterRef} className="relative shrink-0">
                   <button
                     onClick={() => setFilterOpen((o) => !o)}
-                    className={`flex items-center gap-1.5 px-4 py-1.5 text-sm border rounded-lg transition-colors ${
+                    className={`flex items-center gap-1.5 px-3.5 py-1.5 text-sm border rounded transition-colors ${
                       activeType
-                        ? 'bg-blue-600 text-white border-blue-600'
-                        : 'text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'text-muted-foreground bg-background border-border hover:text-foreground hover:border-foreground/20'
                     }`}
                   >
                     {activeTypeLabel ?? 'Filter'}
@@ -191,27 +189,27 @@ export default function DashboardClient({ questions, lang = 'python', dbError }:
                   </button>
 
                   {filterOpen && (
-                    <div className="absolute right-0 top-full mt-1.5 w-52 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden z-20">
+                    <div className="absolute right-0 top-full mt-1.5 w-52 bg-card border border-border rounded shadow-lg overflow-hidden z-20">
                       <button
                         onClick={() => { setActiveType(null); setFilterOpen(false); }}
                         className={`flex items-center justify-between w-full px-4 py-2.5 text-sm text-left transition-colors ${
                           activeType === null
-                            ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                            ? 'bg-accent text-primary'
+                            : 'text-foreground hover:bg-accent/50'
                         }`}
                       >
                         All types
                         {activeType === null && <Check className="size-3.5" />}
                       </button>
-                      <div className="h-px bg-gray-100 dark:bg-gray-700" />
+                      <div className="h-px bg-border" />
                       {TYPE_FILTERS.map((f) => (
                         <button
                           key={f.value}
                           onClick={() => { setActiveType(f.value); setFilterOpen(false); }}
                           className={`flex items-center justify-between w-full px-4 py-2.5 text-sm text-left transition-colors ${
                             activeType === f.value
-                              ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                              ? 'bg-accent text-primary'
+                              : 'text-foreground hover:bg-accent/50'
                           }`}
                         >
                           {f.label}
@@ -226,16 +224,16 @@ export default function DashboardClient({ questions, lang = 'python', dbError }:
               {/* Two-column area: question list + side panel */}
               <div className="flex flex-1 overflow-hidden min-h-0">
                 {/* Question list */}
-                <div className="flex-[3] overflow-y-auto px-5 pt-5 pb-8 space-y-3 min-w-0">
+                <div className="flex-[3] overflow-y-auto px-5 pt-5 pb-8 space-y-2 min-w-0">
                   {filteredQuestions.map((q) => {
                     const status = statuses[q.id] ?? 'not_started';
                     return (
                       <button
                         key={q.id}
                         onClick={() => handleQuestionClick(q.id)}
-                        className="w-full text-left bg-white dark:bg-gray-800 rounded-xl px-4 py-3.5 hover:shadow-md transition-all cursor-pointer"
+                        className="w-full text-left bg-card border border-border rounded-lg px-4 py-3.5 hover:border-primary/40 hover:bg-accent/30 transition-colors cursor-pointer"
                       >
-                        <p className="text-sm text-gray-900 dark:text-gray-100 leading-snug line-clamp-2 mb-2">
+                        <p className="text-sm text-foreground leading-snug line-clamp-2 mb-2">
                           {q.question}
                         </p>
                         <StatusBadge status={status} />
@@ -244,14 +242,14 @@ export default function DashboardClient({ questions, lang = 'python', dbError }:
                   })}
 
                   {filteredQuestions.length === 0 && (
-                    <div className="text-center py-12 text-gray-400 text-sm">
+                    <div className="text-center py-12 text-muted-foreground text-sm">
                       No {activeTypeLabel ? `"${activeTypeLabel}"` : ''} questions found for this tier.
                     </div>
                   )}
                 </div>
 
                 {/* Progress panel */}
-                <div className="flex-[2] m-4 ml-0 rounded-xl bg-gray-50 dark:bg-gray-900 hidden md:flex flex-col border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <div className="flex-[2] m-4 ml-0 rounded-lg bg-card hidden md:flex flex-col border border-border overflow-hidden">
                   <ProgressPanel questions={questions} statuses={statuses} />
                 </div>
               </div>
