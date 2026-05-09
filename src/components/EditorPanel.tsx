@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, forwardRef, useImperativeHandle } from "react";
 import { EditorView, basicSetup } from "codemirror";
-import { EditorState } from "@codemirror/state";
+import { EditorState, Prec } from "@codemirror/state";
+import { keymap } from "@codemirror/view";
 import { python } from "@codemirror/lang-python";
 
 const editorTheme = EditorView.theme({
@@ -11,14 +12,38 @@ const editorTheme = EditorView.theme({
   ".cm-content": { fontFamily: "'JetBrains Mono', 'Fira Code', monospace" },
 });
 
+export interface EditorPanelHandle {
+  focus(): void;
+  reset(): void;
+}
+
 type Props = {
   initialCode: string;
   onChange: (code: string) => void;
+  onRun?: () => void;
 };
 
-export default function EditorPanel({ initialCode, onChange }: Props) {
+const EditorPanel = forwardRef<EditorPanelHandle, Props>(function EditorPanel(
+  { initialCode, onChange, onRun },
+  ref
+) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
+  const onRunRef = useRef(onRun);
+  useEffect(() => { onRunRef.current = onRun; });
+
+  useImperativeHandle(ref, () => ({
+    focus() {
+      viewRef.current?.focus();
+    },
+    reset() {
+      const view = viewRef.current;
+      if (!view) return;
+      view.dispatch({
+        changes: { from: 0, to: view.state.doc.length, insert: '' },
+      });
+    },
+  }));
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -30,6 +55,17 @@ export default function EditorPanel({ initialCode, onChange }: Props) {
           basicSetup,
           python(),
           editorTheme,
+          Prec.highest(
+            keymap.of([
+              {
+                key: 'Mod-Enter',
+                run: () => {
+                  onRunRef.current?.();
+                  return true;
+                },
+              },
+            ])
+          ),
           EditorView.updateListener.of((update) => {
             if (update.docChanged) {
               onChange(update.state.doc.toString());
@@ -55,4 +91,6 @@ export default function EditorPanel({ initialCode, onChange }: Props) {
       className="h-full overflow-hidden [&_.cm-editor]:h-full [&_.cm-scroller]:h-full"
     />
   );
-}
+});
+
+export default EditorPanel;

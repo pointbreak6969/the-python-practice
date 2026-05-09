@@ -70,7 +70,7 @@ export default function OutputPanel({ lines, inputPrompt, onInputSubmit }: Props
               ref={inputRef}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              className="flex-1 bg-transparent border-b border-border text-foreground outline-none caret-foreground min-w-0"
+              className="flex-1 bg-transparent border-b border-border text-foreground outline-none caret-foreground min-w-0 text-base md:text-sm"
               autoComplete="off"
               spellCheck={false}
             />
