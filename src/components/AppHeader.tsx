@@ -1,0 +1,138 @@
+'use client';
+
+import Link from 'next/link';
+import { ArrowLeft, Keyboard, Menu, Moon, Play, SendHorizonal, Sun } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Toggle } from '@/components/ui/toggle';
+import { cn } from '@/lib/utils';
+import { Spinner } from '@/components/ui/spinner';
+import type { QuestionStatus } from '@/lib/types';
+
+interface Props {
+  isDark: boolean;
+  onToggleTheme: () => void;
+  onMobileMenuOpen: () => void;
+  onRun: () => void;
+  onSubmit: () => void;
+  onShowShortcuts: () => void;
+  isRunning: boolean;
+  isLoading: boolean;
+  canSubmit: boolean;
+  statuses: Record<string, QuestionStatus>;
+  showBackButton?: boolean;
+}
+
+export default function AppHeader({
+  isDark,
+  onToggleTheme,
+  onMobileMenuOpen,
+  onRun,
+  onSubmit,
+  onShowShortcuts,
+  isRunning,
+  isLoading,
+  canSubmit,
+  statuses,
+  showBackButton = false,
+}: Props) {
+  const totalSolved = Object.values(statuses).filter((s) => s === 'solved').length;
+
+  return (
+    <header className="flex items-center justify-between px-3 py-2 border-b border-border bg-background shrink-0">
+      {/* Left: back button (compiler view) or mobile menu + logo */}
+      <div className="flex items-center gap-2">
+        {showBackButton ? (
+          <Link
+            href="/"
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="size-4" />
+            <span className="hidden sm:inline">Dashboard</span>
+          </Link>
+        ) : (
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={onMobileMenuOpen}
+            className="lg:hidden h-9 w-9"
+            aria-label="Open question browser"
+          >
+            <Menu className="size-4" />
+          </Button>
+        )}
+        <span className="font-semibold text-sm tracking-tight">
+          🐍 PyPractice
+        </span>
+        {totalSolved > 0 && (
+          <span className="hidden sm:inline text-xs text-muted-foreground">
+            {totalSolved} solved
+          </span>
+        )}
+      </div>
+
+      {/* Right: shortcuts help + theme toggle + mobile run button */}
+      <div className="flex items-center gap-1.5">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={onShowShortcuts}
+          className="hidden sm:flex h-9 w-9"
+          aria-label="Keyboard shortcuts"
+        >
+          <Keyboard className="size-4" />
+        </Button>
+
+        <Toggle
+          pressed={isDark}
+          onPressedChange={onToggleTheme}
+          aria-label="Toggle theme"
+          size="sm"
+        >
+          {isDark ? <Moon className="size-4" /> : <Sun className="size-4" />}
+        </Toggle>
+
+        {/* Run + Submit buttons — only on mobile/tablet (desktop has CompilerToolbar) */}
+        <Button
+          onClick={onRun}
+          disabled={isLoading || isRunning}
+          size="sm"
+          className={cn(
+            'lg:hidden h-9',
+            isRunning || isLoading
+              ? 'bg-muted text-muted-foreground cursor-not-allowed'
+              : 'bg-green-600 hover:bg-green-700 text-white'
+          )}
+        >
+          {isRunning ? (
+            <>
+              <Spinner className="size-3.5 mr-1" />
+              Running
+            </>
+          ) : (
+            <>
+              <Play className="size-3.5 mr-1" />
+              Run
+            </>
+          )}
+        </Button>
+
+        <Button
+          onClick={onSubmit}
+          disabled={!canSubmit}
+          size="sm"
+          variant="outline"
+          className={cn(
+            'lg:hidden h-9',
+            canSubmit
+              ? 'border-blue-500 text-blue-500 hover:bg-blue-500/10'
+              : 'opacity-40 cursor-not-allowed'
+          )}
+        >
+          <SendHorizonal className="size-3.5 mr-1" />
+          Submit
+        </Button>
+      </div>
+    </header>
+  );
+}
+
