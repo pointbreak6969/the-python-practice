@@ -41,3 +41,15 @@ yarn-error.log*
 next-env.d.ts
 /questions
 questions/*
+
+# media / binary assets
+*.webm
+*.mp4
+*.mov
+
+# dev utility scripts
+screenshot.mjs
+/scripts/
+
+# claude code local settings
+.claude/settings.local.json
