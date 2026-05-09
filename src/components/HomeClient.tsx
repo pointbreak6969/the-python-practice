@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import AppHeader from '@/components/AppHeader';
 import SuccessOverlay from '@/components/SuccessOverlay';
+import ErrorOverlay from '@/components/ErrorOverlay';
 import QuestionDetail from '@/components/QuestionDetail';
 import QuestionBrowser from '@/components/sidebar/QuestionBrowser';
 import SolutionRevealPanel from '@/components/solution/SolutionRevealPanel';
@@ -56,6 +57,7 @@ export default function HomeClient({ questions, initialQuestionId }: Props) {
   const [bridgeReady, setBridgeReady] = useState(false);
   const [hasRun, setHasRun] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showError, setShowError] = useState(false);
 
   const compilerRef = useRef<CompilerHandle>(null);
 
@@ -101,6 +103,7 @@ export default function HomeClient({ questions, initialQuestionId }: Props) {
       setAttemptCounts((prev) => ({ ...prev, [questionId]: 0 }));
       setShowSuccess(true);
     } else {
+      setShowError(true);
       setAttemptCounts((prev) => ({
         ...prev,
         [questionId]: (prev[questionId] ?? 0) + 1,
@@ -261,7 +264,8 @@ export default function HomeClient({ questions, initialQuestionId }: Props) {
       </MobileDrawer>
 
       <ShortcutsHelpDialog open={isShortcutsOpen} onOpenChange={setIsShortcutsOpen} />
-      <SuccessOverlay show={showSuccess} onDone={() => setShowSuccess(false)} />
+      <SuccessOverlay show={showSuccess} onDone={() => { setShowSuccess(false); handleNextQuestion(); }} />
+      <ErrorOverlay show={showError} onDone={() => setShowError(false)} />
     </div>
   );
 }
