@@ -22,9 +22,18 @@ function checkRateLimit(ip: string): boolean {
   return true
 }
 
+function getClientIp(req: NextRequest): string {
+  // Prefer headers set by trusted reverse proxies/CDNs over the spoofable x-forwarded-for chain
+  return (
+    req.headers.get('cf-connecting-ip') ??          // Cloudflare
+    req.headers.get('x-real-ip') ??                  // nginx / load balancers
+    req.headers.get('x-forwarded-for')?.split(',').at(-1)?.trim() ?? // last entry = outermost proxy
+    'unknown'
+  )
+}
+
 export async function POST(req: NextRequest) {
-  const ip =
-    req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown'
+  const ip = getClientIp(req)
 
   if (!checkRateLimit(ip)) {
     return NextResponse.json(
@@ -65,5 +74,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Could not verify answer' }, { status: 500 })
   }
 
-  return NextResponse.json({ correct: data as boolean })
+  const correct = typeof data === 'boolean' ? data : false
+  return NextResponse.json({ correct })
 }

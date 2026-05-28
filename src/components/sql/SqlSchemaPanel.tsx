@@ -22,7 +22,7 @@ export function SqlSchemaPanel({ runQuery, ready, refreshKey = 0 }: Props) {
     setLoading(true);
     Promise.all(
       AVAILABLE_TABLES.map(async (table) => {
-        const result = await runQuery(`SELECT * FROM ${table.name};`);
+        const result = await runQuery(`SELECT * FROM ${table.name} LIMIT 100;`);
         if (result.status === 'success' && result.results.length > 0) {
           return [table.name, result.results[0]] as const;
         }

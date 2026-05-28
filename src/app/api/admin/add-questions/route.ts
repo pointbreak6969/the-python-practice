@@ -224,8 +224,8 @@ export async function POST(req: NextRequest) {
     .upsert(rows, { onConflict: 'id', count: 'exact' })
 
   if (error) {
-    console.error('[admin/add-questions]', error.message)
-    return NextResponse.json({ error: 'Database error', detail: error.message }, { status: 500 })
+    console.error('[admin/add-questions]', error.message, error.details)
+    return NextResponse.json({ error: 'Failed to insert questions' }, { status: 500 })
   }
 
   return NextResponse.json({ inserted: count ?? rows.length, errors: [] })

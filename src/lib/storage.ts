@@ -10,68 +10,106 @@ function isClient(): boolean {
   return typeof window !== 'undefined'
 }
 
+function safeLocalStorage(): Storage | null {
+  if (!isClient()) return null
+  try {
+    // Quick availability check — throws in some private-browsing modes or when quota is full
+    const test = '__ls_test__'
+    window.localStorage.setItem(test, test)
+    window.localStorage.removeItem(test)
+    return window.localStorage
+  } catch {
+    return null
+  }
+}
+
 export function getQuestionStatus(id: string): QuestionStatus {
-  if (!isClient()) return 'not_started'
-  return (localStorage.getItem(`qstatus:${id}`) as QuestionStatus) ?? 'not_started'
+  try {
+    const ls = safeLocalStorage()
+    return (ls?.getItem(`qstatus:${id}`) as QuestionStatus) ?? 'not_started'
+  } catch {
+    return 'not_started'
+  }
 }
 
 export function setQuestionStatus(id: string, status: QuestionStatus): void {
-  if (!isClient()) return
-  if (getQuestionStatus(id) === 'solved') return
-  localStorage.setItem(`qstatus:${id}`, status)
+  try {
+    const ls = safeLocalStorage()
+    if (!ls) return
+    if (ls.getItem(`qstatus:${id}`) === 'solved') return
+    ls.setItem(`qstatus:${id}`, status)
+  } catch { /* quota exceeded or unavailable */ }
 }
 
 export function getAllStatuses(): Record<string, QuestionStatus> {
-  if (!isClient()) return {}
-  const result: Record<string, QuestionStatus> = {}
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i)
-    if (key?.startsWith('qstatus:')) {
-      const id = key.slice('qstatus:'.length)
-      result[id] = (localStorage.getItem(key) as QuestionStatus) ?? 'not_started'
+  try {
+    const ls = safeLocalStorage()
+    if (!ls) return {}
+    const result: Record<string, QuestionStatus> = {}
+    for (let i = 0; i < ls.length; i++) {
+      const key = ls.key(i)
+      if (key?.startsWith('qstatus:')) {
+        const id = key.slice('qstatus:'.length)
+        result[id] = (ls.getItem(key) as QuestionStatus) ?? 'not_started'
+      }
     }
+    return result
+  } catch {
+    return {}
   }
-  return result
 }
 
 export function getAttemptCount(id: string): number {
-  if (!isClient()) return 0
-  return parseInt(localStorage.getItem(`qattempts:${id}`) ?? '0', 10)
+  try {
+    const ls = safeLocalStorage()
+    return parseInt(ls?.getItem(`qattempts:${id}`) ?? '0', 10)
+  } catch {
+    return 0
+  }
 }
 
 export function setAttemptCount(id: string, count: number): void {
-  if (!isClient()) return
-  localStorage.setItem(`qattempts:${id}`, String(count))
+  try {
+    safeLocalStorage()?.setItem(`qattempts:${id}`, String(count))
+  } catch { /* quota exceeded or unavailable */ }
 }
 
 export function getAllAttemptCounts(): Record<string, number> {
-  if (!isClient()) return {}
-  const result: Record<string, number> = {}
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i)
-    if (key?.startsWith('qattempts:')) {
-      const id = key.slice('qattempts:'.length)
-      result[id] = parseInt(localStorage.getItem(key) ?? '0', 10)
+  try {
+    const ls = safeLocalStorage()
+    if (!ls) return {}
+    const result: Record<string, number> = {}
+    for (let i = 0; i < ls.length; i++) {
+      const key = ls.key(i)
+      if (key?.startsWith('qattempts:')) {
+        const id = key.slice('qattempts:'.length)
+        result[id] = parseInt(ls.getItem(key) ?? '0', 10)
+      }
     }
+    return result
+  } catch {
+    return {}
   }
-  return result
 }
 
 export function getSavedCode(id: string): string | null {
-  if (!isClient()) return null
-  return localStorage.getItem(`qcode:${id}`)
+  try {
+    return safeLocalStorage()?.getItem(`qcode:${id}`) ?? null
+  } catch {
+    return null
+  }
 }
 
 export function setSavedCode(id: string, code: string): void {
-  if (!isClient()) return
-  localStorage.setItem(`qcode:${id}`, code)
+  try {
+    safeLocalStorage()?.setItem(`qcode:${id}`, code)
+  } catch { /* quota exceeded or unavailable */ }
 }
 
 export function getLastSession(): LastSession | null {
-  if (!isClient()) return null
-  const raw = localStorage.getItem('session:last')
-  if (!raw) return null
   try {
+    const raw = safeLocalStorage()?.getItem('session:last')
+    if (!raw) return null
     return JSON.parse(raw) as LastSession
   } catch {
     return null
@@ -79,9 +117,10 @@ export function getLastSession(): LastSession | null {
 }
 
 export function setLastSession(questionId: string, tier: string): void {
-  if (!isClient()) return
-  localStorage.setItem(
-    'session:last',
-    JSON.stringify({ questionId, tier, timestamp: Date.now() })
-  )
+  try {
+    safeLocalStorage()?.setItem(
+      'session:last',
+      JSON.stringify({ questionId, tier, timestamp: Date.now() })
+    )
+  } catch { /* quota exceeded or unavailable */ }
 }

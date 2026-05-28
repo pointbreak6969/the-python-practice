@@ -41,8 +41,17 @@ Point out specifically what they got wrong and what they should try instead — 
 No preamble, no "Great try!", no encouragement fluff. Just the useful hint.`;
 }
 
+function getClientIp(req: NextRequest): string {
+  return (
+    req.headers.get('cf-connecting-ip') ??
+    req.headers.get('x-real-ip') ??
+    req.headers.get('x-forwarded-for')?.split(',').at(-1)?.trim() ??
+    'unknown'
+  );
+}
+
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown';
+  const ip = getClientIp(req);
 
   if (!checkRateLimit(ip)) {
     return NextResponse.json(

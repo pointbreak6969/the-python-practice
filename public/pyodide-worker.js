@@ -93,6 +93,7 @@ _blocked_modules = frozenset([
     'types', 'inspect', 'gc',
     'pkgutil', 'zipimport', 'imp', 'linecache',
     'code', 'codeop', 'pydoc', 'runpy',
+    'js',  # Pyodide JS bridge — blocks access to JavaScript globals
 ])
 _real_import = _builtins.__import__
 def _safe_import(name, *args, **kwargs):
@@ -107,6 +108,8 @@ _builtins.__import__ = _safe_import
 
 ${inputImpl}
 _builtins.input = _safe_input
+# Remove js from sys.modules so user code can't reach it via sys.modules['js']
+_sys.modules.pop('js', None)
 `;
 }
 

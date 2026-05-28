@@ -50,7 +50,7 @@ const SqlCompiler = forwardRef<CompilerHandle, Props>(function SqlCompiler(
   { question, initialCode, onAttempt, onStatusChange, hintProps },
   ref
 ) {
-  const { ready, initializing, runQuery, checkAnswer, resetDb } = usePglite();
+  const { ready, initializing, initError, runQuery, checkAnswer, resetDb } = usePglite();
 
   const defaultCode = initialCode ?? SQL_STARTER_CODE;
   const [code, setCode] = useState(defaultCode);
@@ -81,8 +81,10 @@ const SqlCompiler = forwardRef<CompilerHandle, Props>(function SqlCompiler(
       setStatus('loading');
     } else if (ready) {
       setStatus('idle');
+    } else if (initError) {
+      setStatus('error');
     }
-  }, [initializing, ready]);
+  }, [initializing, ready, initError]);
 
   // Reset when question changes
   useEffect(() => {
@@ -116,11 +118,16 @@ const SqlCompiler = forwardRef<CompilerHandle, Props>(function SqlCompiler(
 
     if (q.type === 'write_the_code') {
       const { setupSql } = parseSqlQuestion(q.question);
-      const correct = await checkAnswer(codeRef.current, q.answer, setupSql || undefined);
-      onAttemptRef.current(correct, correct ? undefined : {
-        userCode: codeRef.current,
-        userAnswer: '',
-      });
+      try {
+        const correct = await checkAnswer(codeRef.current, q.answer, setupSql || undefined);
+        onAttemptRef.current(correct, correct ? undefined : {
+          userCode: codeRef.current,
+          userAnswer: '',
+        });
+      } catch (err) {
+        console.error('[SqlCompiler] checkAnswer failed:', err);
+        onAttemptRef.current(false, { userCode: codeRef.current, userAnswer: '' });
+      }
       return;
     }
 
@@ -140,7 +147,12 @@ const SqlCompiler = forwardRef<CompilerHandle, Props>(function SqlCompiler(
   }, [checkAnswer]);
 
   const handleReset = useCallback(async () => {
-    await resetDb();
+    try {
+      await resetDb();
+    } catch (err) {
+      console.error('[SqlCompiler] resetDb failed:', err);
+      return;
+    }
     const fresh = initialCode ?? SQL_STARTER_CODE;
     setCode(fresh);
     setResult(null);
@@ -227,7 +239,12 @@ const SqlCompiler = forwardRef<CompilerHandle, Props>(function SqlCompiler(
         >
           {/* Query output */}
           <div className="flex-1 overflow-auto p-4 bg-background font-mono text-sm">
-            {result === null && (
+            {initError && (
+              <p className="text-destructive text-sm">
+                Failed to initialize SQL engine: {initError}
+              </p>
+            )}
+            {!initError && result === null && (
               <p className="text-muted-foreground select-none">
                 Results will appear here after you run a query.
               </p>
