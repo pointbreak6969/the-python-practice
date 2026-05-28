@@ -54,9 +54,9 @@ export default function OutputPanel({ lines, inputPrompt, onInputSubmit }: Props
           <p className="text-muted-foreground select-none">Output will appear here…</p>
         )}
 
-        {lines.map((line, i) => (
+        {lines.map((line) => (
           <pre
-            key={i}
+            key={line.id}
             className={`whitespace-pre-wrap break-all leading-5 ${lineClass(line.type)}`}
           >
             {line.text}

@@ -18,6 +18,13 @@ function truncate(lines) {
   return lines;
 }
 
+// Delete network globals so user code cannot reach them via self.* or globalThis.*
+// Parameter shadowing alone is bypassable; deletion is not.
+const _networksToDelete = ['fetch', 'XMLHttpRequest', 'WebSocket', 'EventSource', 'importScripts'];
+for (const name of _networksToDelete) {
+  try { delete self[name]; } catch { /* read-only in some envs — best effort */ }
+}
+
 // Post ready immediately — no WASM loading required
 self.postMessage({ type: 'ready' });
 

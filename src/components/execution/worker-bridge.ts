@@ -1,4 +1,5 @@
 export type OutputLine = {
+  id: string;
   text: string;
   type: "stdout" | "stderr" | "error" | "timeout" | "truncated";
 };

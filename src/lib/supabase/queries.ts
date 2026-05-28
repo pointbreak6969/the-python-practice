@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { getClient } from './client'
 import type { Language, Question } from '../types'
 
@@ -7,7 +8,7 @@ const TABLE_MAP: Record<string, string> = {
   sql: 'sql_questions',
 }
 
-export async function getQuestions(language?: Language): Promise<Question[]> {
+export const getQuestions = cache(async function getQuestions(language?: Language): Promise<Question[]> {
   const table = language ? (TABLE_MAP[language] ?? 'questions') : 'questions'
 
   const { data, error } = await getClient()
@@ -22,4 +23,4 @@ export async function getQuestions(language?: Language): Promise<Question[]> {
     ...row,
     language: language ?? 'python',
   })) as Question[]
-}
+})
