@@ -78,15 +78,7 @@ export default function HomeClient({ questions, initialQuestionId }: Props) {
     }
   }, [questionMap, initialQuestionId]);
 
-  // Persist statuses to localStorage whenever they change
-  useEffect(() => {
-    Object.entries(statuses).forEach(([id, s]) => setQuestionStatus(id, s));
-  }, [statuses]);
-
-  // Persist attempt counts to localStorage whenever they change
-  useEffect(() => {
-    Object.entries(attemptCounts).forEach(([id, n]) => setAttemptCount(id, n));
-  }, [attemptCounts]);
+  // Persistence is handled directly inside each handler — no bulk effects needed
 
   const selectedQuestion = questionMap.get(selectedId) ?? null;
   const attemptCount = attemptCounts[selectedId] ?? 0;
@@ -119,16 +111,20 @@ export default function HomeClient({ questions, initialQuestionId }: Props) {
   const handleAttempt = useCallback((questionId: string, passed: boolean, wrongContext?: WrongAttemptContext) => {
     if (passed) {
       setStatuses((prev) => ({ ...prev, [questionId]: 'solved' }));
+      setQuestionStatus(questionId, 'solved');
       setAttemptCounts((prev) => ({ ...prev, [questionId]: 0 }));
+      setAttemptCount(questionId, 0);
       setShowSuccess(true);
     } else {
       setShowError(true);
-      setAttemptCounts((prev) => ({
-        ...prev,
-        [questionId]: (prev[questionId] ?? 0) + 1,
-      }));
+      setAttemptCounts((prev) => {
+        const newCount = (prev[questionId] ?? 0) + 1;
+        setAttemptCount(questionId, newCount);
+        return { ...prev, [questionId]: newCount };
+      });
       setStatuses((prev) => {
         if (prev[questionId] === 'solved') return prev;
+        setQuestionStatus(questionId, 'attempted');
         return { ...prev, [questionId]: 'attempted' };
       });
       if (wrongContext) {
@@ -139,11 +135,14 @@ export default function HomeClient({ questions, initialQuestionId }: Props) {
 
   const handleTryAgain = useCallback(() => {
     setAttemptCounts((prev) => ({ ...prev, [selectedId]: 0 }));
+    setAttemptCount(selectedId, 0);
   }, [selectedId]);
 
   const handleMarkSolved = useCallback(() => {
     setStatuses((prev) => ({ ...prev, [selectedId]: 'solved' }));
+    setQuestionStatus(selectedId, 'solved');
     setAttemptCounts((prev) => ({ ...prev, [selectedId]: 0 }));
+    setAttemptCount(selectedId, 0);
   }, [selectedId]);
 
   const handleNextQuestion = useCallback(() => {

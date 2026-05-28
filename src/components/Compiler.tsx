@@ -59,6 +59,11 @@ interface CompilerProps {
   hintProps?: HintProps;
 }
 
+let _lineId = 0;
+function mkLine(text: string, type: OutputLine["type"]): OutputLine {
+  return { id: String(_lineId++), text, type };
+}
+
 /** Trim trailing whitespace per line then trim leading/trailing blank lines. */
 function normalizeOutput(raw: string): string {
   return raw
@@ -159,6 +164,7 @@ const Compiler = forwardRef<CompilerHandle, CompilerProps>(function Compiler(
   const currentQuestionRef = useRef<Question | null | undefined>(question);
   const runningQuestionRef = useRef<Question | null | undefined>(null);
   const onAttemptRef = useRef(onAttempt);
+  const setOutputRef = useRef(setOutput);
 
   const codeRef = useRef(code);
   const userPredictionRef = useRef(userPrediction);
@@ -182,6 +188,10 @@ const Compiler = forwardRef<CompilerHandle, CompilerProps>(function Compiler(
     onAttemptRef.current = onAttempt;
   }, [onAttempt]);
 
+  useEffect(() => {
+    setOutputRef.current = setOutput;
+  }, [setOutput]);
+
   // Reset editor and output when question changes
   useEffect(() => {
     setCode(initialCode ?? defaultCode);
@@ -189,8 +199,10 @@ const Compiler = forwardRef<CompilerHandle, CompilerProps>(function Compiler(
     setInputPrompt(null);
     setHasRun(false);
     setUserPrediction('');
+    // Clear stale refs so previous run's output can't bleed into the new question
     pendingOutputRef.current = '';
     lastStdoutRef.current = '';
+    runningQuestionRef.current = null;
   // initialCode and defaultCode intentionally excluded — only reset on question change
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [question?.id]);
@@ -203,10 +215,10 @@ const Compiler = forwardRef<CompilerHandle, CompilerProps>(function Compiler(
     if (language === 'sql') return;
 
     if (language === 'python' && typeof SharedArrayBuffer === "undefined") {
-      setOutput([{
-        text: "⚠️ SharedArrayBuffer not available. The input() function will not work. Please use Chrome or Firefox with cross-origin isolation enabled.",
-        type: "error",
-      }]);
+      setOutput([mkLine(
+        "⚠️ SharedArrayBuffer not available. The input() function will not work. Please use Chrome or Firefox with cross-origin isolation enabled.",
+        "error"
+      )]);
       setStatus("idle");
       setBridgeReady(true);
     }
@@ -229,11 +241,11 @@ const Compiler = forwardRef<CompilerHandle, CompilerProps>(function Compiler(
               ...stdout
                 .split("\n")
                 .filter((l, i, a) => i < a.length - 1 || l)
-                .map((l): OutputLine => ({ text: l, type: "stdout" }))
+                .map((l): OutputLine => mkLine(l, "stdout"))
             );
           }
           if (stderr) {
-            next.push({ text: stderr, type: "stderr" });
+            next.push(mkLine(stderr, "stderr"));
           }
           return next;
         });
@@ -245,16 +257,13 @@ const Compiler = forwardRef<CompilerHandle, CompilerProps>(function Compiler(
         setStatus("idle");
         setInputPrompt(null);
         if (kind === "timeout") {
-          setOutput((prev) => [
-            ...prev,
-            { text: "⏱ Execution timed out (1 minute limit exceeded).", type: "timeout" },
-            { text: "Tip: check for infinite loops or very large data operations.", type: "timeout" },
+          // Clear stale output before showing timeout — avoids confusing mix of old and new
+          setOutput([
+            mkLine("⏱ Execution timed out (1 minute limit exceeded).", "timeout"),
+            mkLine("Tip: check for infinite loops or very large data operations.", "timeout"),
           ]);
         } else {
-          setOutput((prev) => [
-            ...prev,
-            { text: message, type: "error" },
-          ]);
+          setOutput((prev) => [...prev, mkLine(message, "error")]);
         }
         if (kind === "crash" || kind === "timeout") {
           setBridgeReady(false);
@@ -313,18 +322,27 @@ const Compiler = forwardRef<CompilerHandle, CompilerProps>(function Compiler(
         body: JSON.stringify({ questionId: q.id, userAnswer }),
         signal: AbortSignal.timeout(5000),
       })
-        .then((r) => r.ok ? r.json() : { correct: false })
+        .then((r) => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
         .then((data: { correct?: boolean }) => {
-          const passed = data.correct ?? false;
+          const passed = data.correct === true;
           onAttemptRef.current?.(passed, passed ? undefined : {
             userCode: q.type === 'write_the_code' ? codeRef.current : '',
             userAnswer,
           });
         })
-        .catch(() => onAttemptRef.current?.(false, {
-          userCode: codeRef.current,
-          userAnswer,
-        }));
+        .catch((err: unknown) => {
+          // Network/timeout errors must not count as a wrong attempt
+          const isTimeout = err instanceof Error && err.name === 'TimeoutError';
+          setOutputRef.current?.((prev) => [
+            ...prev,
+            mkLine(
+              isTimeout
+                ? '⚠ Submit timed out. Check your connection and try again.'
+                : '⚠ Could not verify answer. Check your connection and try again.',
+              'error'
+            ),
+          ]);
+        });
     } else {
       onAttemptRef.current(false, { userCode: codeRef.current, userAnswer: '' });
     }
@@ -347,7 +365,7 @@ const Compiler = forwardRef<CompilerHandle, CompilerProps>(function Compiler(
   const handleInputSubmit = useCallback((value: string) => {
     setInputPrompt(null);
     if (value) {
-      setOutput((prev) => [...prev, { text: value, type: "stdout" }]);
+      setOutput((prev) => [...prev, mkLine(value, "stdout")]);
     }
     bridgeRef.current?.sendInput(value);
   }, []);

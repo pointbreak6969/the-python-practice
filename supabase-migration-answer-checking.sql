@@ -63,12 +63,16 @@ BEGIN
     RETURN false;
   END IF;
 
-  -- All other checked types: normalised stdout vs expected_output
+  -- All other checked types: normalised stdout vs expected_output (+ alternative)
   IF q_expected IS NULL THEN
     RETURN false;
   END IF;
 
-  RETURN normalize_python_output(user_answer) = normalize_python_output(q_expected);
+  norm_user := normalize_python_output(user_answer);
+
+  IF norm_user = normalize_python_output(q_expected) THEN RETURN true; END IF;
+  IF q_alt IS NOT NULL AND norm_user = normalize_python_output(q_alt) THEN RETURN true; END IF;
+  RETURN false;
 END;
 $$;
 
