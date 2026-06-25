@@ -25,6 +25,16 @@ for (const name of _networksToDelete) {
   try { delete self[name]; } catch { /* read-only in some envs — best effort */ }
 }
 
+// User JS gets zero imports. A static `import ...` is already a SyntaxError in a
+// classic worker; this rejects the dynamic escape hatches — import() and
+// require() — before the code is ever run.
+const IMPORT_PATTERN = /\bimport\s*\(|(?:^|[^.\w$])require\s*\(/;
+function assertNoImports(code) {
+  if (IMPORT_PATTERN.test(code)) {
+    throw new Error("imports are disabled in this environment");
+  }
+}
+
 // Post ready immediately — no WASM loading required
 self.postMessage({ type: 'ready' });
 
@@ -44,6 +54,7 @@ function runCode(code) {
     table: (v) => stdoutLines.push(stringify(v)),
   };
   try {
+    assertNoImports(code);
     const fn = new Function('console', 'fetch', 'XMLHttpRequest', 'WebSocket', 'importScripts', code);
     fn(mockConsole, undefined, undefined, undefined, undefined);
   } catch (err) {
@@ -78,6 +89,7 @@ self.onmessage = function (e) {
   };
 
   try {
+    assertNoImports(code);
     // Shadow network globals so user code can't make requests
     const fn = new Function('console', 'fetch', 'XMLHttpRequest', 'WebSocket', 'importScripts', code);
     fn(mockConsole, undefined, undefined, undefined, undefined);
