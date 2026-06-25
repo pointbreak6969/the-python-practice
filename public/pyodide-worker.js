@@ -1,12 +1,15 @@
-/* Pyodide Web Worker — runs entirely off the main thread */
+/* Pyodide Web Worker — runs user Python entirely off the main thread.
+ *
+ * Isolation model: Python is a *separate concern* from JavaScript. This worker
+ * never imports the `js` bridge and never exchanges messages with user Python
+ * mid-run — it takes code in, sends stdout/stderr out. User code may import
+ * pure stdlib (math, random, json, ...) but every escape / IO / js module is
+ * blocked. There is no input() bridge: input() raises a clear error.
+ */
 
 importScripts("https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js");
 
 let pyodide = null;
-
-// Shared buffers for input() bridge — set per run message
-let inputBuffer = null;
-let inputMetaBuffer = null;
 
 const MAX_LINES = 1000;
 
@@ -27,34 +30,10 @@ async function init() {
   }
 }
 
-// Python preamble: injected before every user code run
-function buildPreamble(hasSAB) {
-  const inputImpl = hasSAB
-    ? `
-import js as _js
-def _safe_input(prompt=''):
-    _js.postMessage(_js.Object.fromEntries(_js.Array.of(
-        _js.Array.of('type', 'input_request'),
-        _js.Array.of('prompt', str(prompt))
-    )))
-    # Wait for input with 30 second timeout
-    status = _js.Atomics.wait(_js.inputMetaBuffer, 0, 0, 30000)
-    if status == 'timed-out':
-        raise RuntimeError('input() timeout - no response for 30 seconds')
-    length = _js.inputMetaBuffer[0]
-    if length == 0:
-        raise RuntimeError('input() failed - no data received')
-    byte_array = bytes(_js.inputBuffer[i] for i in range(length))
-    result = byte_array.decode('utf-8', errors='replace')
-    _js.inputMetaBuffer[0] = 0
-    return result
-`
-    : `
-import js as _js
-def _safe_input(prompt=''):
-    raise RuntimeError("input() requires SharedArrayBuffer support. Please use Chrome or Firefox with cross-origin isolation enabled.")
-`;
-
+// Python preamble: injected before every user code run. Captures the real
+// import machinery, then installs a guard that blocks escape/IO/js modules
+// while allowing pure stdlib. Never imports `js`.
+function buildPreamble() {
   return `
 import sys as _sys
 import io as _io
@@ -84,6 +63,9 @@ _stderr_buf = _io.StringIO()
 _sys.stdout = _stdout_buf
 _sys.stderr = _stderr_buf
 
+# Modules that grant filesystem, network, process, serialization, or
+# JavaScript-bridge access. Pure-compute stdlib (math, random, json,
+# collections, itertools, datetime, ...) stays importable.
 _blocked_modules = frozenset([
     'os', 'subprocess', 'socket', 'shutil', 'importlib',
     'ctypes', 'multiprocessing', '_io', 'pty', 'fcntl',
@@ -93,7 +75,7 @@ _blocked_modules = frozenset([
     'types', 'inspect', 'gc',
     'pkgutil', 'zipimport', 'imp', 'linecache',
     'code', 'codeop', 'pydoc', 'runpy',
-    'js',  # Pyodide JS bridge — blocks access to JavaScript globals
+    'js',  # Pyodide JS bridge — keeps Python from reaching JavaScript globals
 ])
 _real_import = _builtins.__import__
 def _safe_import(name, *args, **kwargs):
@@ -106,9 +88,12 @@ def _safe_import(name, *args, **kwargs):
     return _real_import(name, *args, **kwargs)
 _builtins.__import__ = _safe_import
 
-${inputImpl}
+def _safe_input(prompt=''):
+    raise RuntimeError("input() is not supported in this environment")
 _builtins.input = _safe_input
-# Remove js from sys.modules so user code can't reach it via sys.modules['js']
+
+# Defense in depth: drop js from sys.modules so user code can't reach it via
+# sys.modules['js'] even though the import itself is already blocked.
 _sys.modules.pop('js', None)
 `;
 }
@@ -116,57 +101,39 @@ _sys.modules.pop('js', None)
 self.onmessage = async (e) => {
   const { type } = e.data;
 
-  if (type === "run") {
-    if (!pyodide) {
-      self.postMessage({ type: "error", message: "Python environment not ready yet." });
-      return;
+  if (type !== "run") return;
+
+  if (!pyodide) {
+    self.postMessage({ type: "error", message: "Python environment not ready yet." });
+    return;
+  }
+
+  const { code } = e.data;
+
+  const preamble = buildPreamble();
+  const fullCode = preamble + "\ntry:\n" +
+    code.split("\n").map(l => "    " + l).join("\n") +
+    "\nexcept _OutputLimitReached:\n" +
+    "    _output_truncated = True\n" +
+    "finally:\n" +
+    "    _sys.stdout = _sys.__stdout__\n" +
+    "    _sys.stderr = _sys.__stderr__\n" +
+    "    _builtins.__import__ = _real_import\n";
+
+  try {
+    await pyodide.runPythonAsync(fullCode);
+    let stdout = truncate(pyodide.globals.get("_stdout_buf").getvalue());
+    const stderr = truncate(pyodide.globals.get("_stderr_buf").getvalue());
+    if (pyodide.globals.get("_output_truncated")) {
+      stdout += "[Execution stopped: output limit of 100 lines reached]";
     }
-
-    const { code, inputBuffer: ib, inputMetaBuffer: imb } = e.data;
-    const hasSAB = !!ib;
-
-    // Expose buffers globally so Python's js module can reach them
-    if (hasSAB) {
-      self.inputBuffer = new Int32Array(ib);
-      self.inputMetaBuffer = new Int32Array(imb);
-      pyodide.globals.set("inputBuffer", self.inputBuffer);
-      pyodide.globals.set("inputMetaBuffer", self.inputMetaBuffer);
-    } else {
-      // Fallback: still need placeholder arrays so the preamble doesn't crash
-      const fakeSab = new Int32Array(4096);
-      const fakeMeta = new Int32Array(1);
-      self.inputBuffer = fakeSab;
-      self.inputMetaBuffer = fakeMeta;
-      pyodide.globals.set("inputBuffer", fakeSab);
-      pyodide.globals.set("inputMetaBuffer", fakeMeta);
-    }
-
-    const preamble = buildPreamble(hasSAB);
-    const fullCode = preamble + "\ntry:\n" +
-      code.split("\n").map(l => "    " + l).join("\n") +
-      "\nexcept _OutputLimitReached:\n" +
-      "    _output_truncated = True\n" +
-      "finally:\n" +
-      "    _sys.stdout = _sys.__stdout__\n" +
-      "    _sys.stderr = _sys.__stderr__\n" +
-      "    _builtins.__import__ = _real_import\n";
-
-    try {
-      await pyodide.runPythonAsync(fullCode);
-      let stdout = truncate(pyodide.globals.get("_stdout_buf").getvalue());
-      const stderr = truncate(pyodide.globals.get("_stderr_buf").getvalue());
-      if (pyodide.globals.get("_output_truncated")) {
-        stdout += "[Execution stopped: output limit of 100 lines reached]";
-      }
-      self.postMessage({ type: "result", stdout, stderr });
-    } catch (err) {
-      // Extract clean Python traceback — strip Pyodide JS wrapper noise
-      let msg = err.message || String(err);
-      // Pyodide wraps errors: "PythonError: Traceback..."
-      const match = msg.match(/PythonError:\s*([\s\S]*)/);
-      if (match) msg = match[1].trim();
-      self.postMessage({ type: "error", message: msg });
-    }
+    self.postMessage({ type: "result", stdout, stderr });
+  } catch (err) {
+    // Extract clean Python traceback — strip Pyodide JS wrapper noise
+    let msg = err.message || String(err);
+    const match = msg.match(/PythonError:\s*([\s\S]*)/);
+    if (match) msg = match[1].trim();
+    self.postMessage({ type: "error", message: msg });
   }
 };
 
