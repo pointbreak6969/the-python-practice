@@ -256,6 +256,12 @@ const Compiler = forwardRef<CompilerHandle, CompilerProps>(function Compiler(
       onError: (message, kind) => {
         setStatus("idle");
         setInputPrompt(null);
+        // A run that errors (syntax error, runtime exception, timeout, crash) is
+        // still a completed run — mark hasRun so Submit stays enabled. Otherwise the
+        // user is stuck: with Submit disabled they can never record an attempt, so
+        // the Hint button and reveal-answer panel (both gated behind an attempt)
+        // never unlock. The error is already shown in the output panel above.
+        setHasRun(true);
         if (kind === "timeout") {
           // Clear stale output before showing timeout — avoids confusing mix of old and new
           setOutput([
