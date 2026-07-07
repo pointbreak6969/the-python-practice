@@ -1,7 +1,8 @@
 import { getQuestions } from '@/lib/supabase/queries';
 import { getCurrentUser } from '@/lib/auth/user';
+import { prisma } from '@/lib/prisma';
 import HomeClient from '@/components/HomeClient';
-import type { Language } from '@/lib/types';
+import type { Language, QuestionStatus } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,6 +16,13 @@ function detectLanguage(id: string): Language {
   if (upper.startsWith('JS')) return 'javascript';
   return 'python';
 }
+
+const STATUS_MAP: Record<string, QuestionStatus> = {
+  NOT_STARTED: 'not_started',
+  ATTEMPTED: 'attempted',
+  SOLVED: 'solved',
+  SKIPPED: 'skipped',
+};
 
 export default async function CompilerPage({ params }: Props) {
   const { id } = await params;
@@ -36,5 +44,39 @@ export default async function CompilerPage({ params }: Props) {
   }
 
   const user = await getCurrentUser();
-  return <HomeClient questions={questions} initialQuestionId={id} user={user} />;
+
+  // Signed-in users see only their server-side progress (guest localStorage
+  // progress stays in guest mode).
+  let serverStatuses: Record<string, QuestionStatus> = {};
+  let serverAttemptCounts: Record<string, number> = {};
+  if (user) {
+    try {
+      const progress = await prisma.progress.findMany({
+        where: { userId: user.id, language },
+        select: { questionId: true, status: true, attempts: true },
+      });
+      serverStatuses = Object.fromEntries(
+        progress.map((p) => [p.questionId, STATUS_MAP[p.status] ?? 'not_started'])
+      );
+      serverAttemptCounts = Object.fromEntries(
+        // Only unsolved questions carry an attempt counter into the assist
+        // ladder — solved ones start fresh if revisited.
+        progress
+          .filter((p) => p.status === 'ATTEMPTED')
+          .map((p) => [p.questionId, p.attempts])
+      );
+    } catch (e) {
+      console.error('[compiler] progress fetch failed', e);
+    }
+  }
+
+  return (
+    <HomeClient
+      questions={questions}
+      initialQuestionId={id}
+      user={user}
+      serverStatuses={serverStatuses}
+      serverAttemptCounts={serverAttemptCounts}
+    />
+  );
 }

@@ -8,7 +8,7 @@ import { Moon, Sun, Search, Trophy } from 'lucide-react';
 import type { Question, Tier, QuestionStatus } from '@/lib/types';
 import type { CurrentUser } from '@/lib/auth/user';
 import type { QuestionStats } from '@/lib/tracking';
-import { getAllStatuses, getLastSession } from '@/lib/storage';
+import { getAllStatuses, getLastSession, clearGuestData } from '@/lib/storage';
 import { TIER_LABELS, TIER_ORDER, TIER_COLOR_VAR, TYPE_SHORT_LABELS } from '@/lib/config';
 import { ProgressRing } from '@/components/ui/ProgressRing';
 import { Logo } from '@/components/brand/Logo';
@@ -78,9 +78,14 @@ export default function DashboardClient({
   const [resume, setResume] = useState<{ questionId: string; topic?: string } | null>(null);
 
   useEffect(() => {
-    // Local progress fills in anything the server doesn't know (guests, older sessions).
-    const local = getAllStatuses();
-    setStatuses((prev) => ({ ...local, ...prev }));
+    // Logged in: guest data (progress, attempts, saved code) is wiped — the
+    // account's progress lives server-side. Guests keep using localStorage.
+    if (user) {
+      clearGuestData();
+    } else {
+      const local = getAllStatuses();
+      setStatuses((prev) => ({ ...local, ...prev }));
+    }
     const last = getLastSession();
     if (last?.questionId) {
       setResume({ questionId: last.questionId });

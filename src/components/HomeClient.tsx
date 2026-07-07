@@ -21,6 +21,7 @@ import { JS_STARTER_CODE, SQL_STARTER_CODE, STARTER_CODE } from '@/lib/config';
 import { parseSqlQuestion } from '@/lib/sql/parse';
 import {
   getAllStatuses,
+  clearGuestData,
   getAllAttemptCounts,
   setQuestionStatus,
   setAttemptCount,
@@ -35,9 +36,18 @@ interface Props {
   questions: Question[];
   initialQuestionId?: string;
   user?: CurrentUser | null;
+  /** Server-side progress for signed-in users (from question_progress). */
+  serverStatuses?: Record<string, QuestionStatus>;
+  serverAttemptCounts?: Record<string, number>;
 }
 
-export default function HomeClient({ questions, initialQuestionId, user = null }: Props) {
+export default function HomeClient({
+  questions,
+  initialQuestionId,
+  user = null,
+  serverStatuses = {},
+  serverAttemptCounts = {},
+}: Props) {
   const questionMap = useMemo(
     () => new Map<string, Question>(questions.map((q) => [q.id, q])),
     [questions]
@@ -55,9 +65,13 @@ export default function HomeClient({ questions, initialQuestionId, user = null }
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(true);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
-  const [attemptCounts, setAttemptCounts] = useState<Record<string, number>>({});
+  const [attemptCounts, setAttemptCounts] = useState<Record<string, number>>(
+    user ? serverAttemptCounts : {}
+  );
   const [lastWrongContext, setLastWrongContext] = useState<Record<string, WrongAttemptContext>>({});
-  const [statuses, setStatuses] = useState<Record<string, QuestionStatus>>({});
+  const [statuses, setStatuses] = useState<Record<string, QuestionStatus>>(
+    user ? serverStatuses : {}
+  );
   const [compilerStatus, setCompilerStatus] = useState<'idle' | 'loading' | 'running' | 'error'>('loading');
   const [bridgeReady, setBridgeReady] = useState(false);
   const [hasRun, setHasRun] = useState(false);
@@ -67,10 +81,16 @@ export default function HomeClient({ questions, initialQuestionId, user = null }
 
   const compilerRef = useRef<CompilerHandle>(null);
 
-  // Load persisted state after hydration to avoid SSR mismatch
+  // Guest mode: load localStorage progress after hydration (avoids SSR mismatch).
+  // Logged in: wipe guest data — the account's progress lives server-side.
   useEffect(() => {
+    if (user) {
+      clearGuestData();
+      return;
+    }
     setStatuses(getAllStatuses());
     setAttemptCounts(getAllAttemptCounts());
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Session resume on mount — only when no specific question was requested via URL
@@ -113,42 +133,47 @@ export default function HomeClient({ questions, initialQuestionId, user = null }
   }, [selectedId]);
 
   const handleAttempt = useCallback((questionId: string, passed: boolean, wrongContext?: WrongAttemptContext, reward?: SolveReward | null) => {
+    // Guest progress persists in localStorage; signed-in progress is recorded
+    // server-side by the submit APIs, so skip guest storage entirely.
+    const persistLocally = !user;
     if (passed) {
       setStatuses((prev) => ({ ...prev, [questionId]: 'solved' }));
-      setQuestionStatus(questionId, 'solved');
+      if (persistLocally) setQuestionStatus(questionId, 'solved');
       setAttemptCounts((prev) => ({ ...prev, [questionId]: 0 }));
-      setAttemptCount(questionId, 0);
+      if (persistLocally) setAttemptCount(questionId, 0);
       setLastReward(reward ?? null);
       setShowSuccess(true);
     } else {
       setShowError(true);
       setAttemptCounts((prev) => {
         const newCount = (prev[questionId] ?? 0) + 1;
-        setAttemptCount(questionId, newCount);
+        if (persistLocally) setAttemptCount(questionId, newCount);
         return { ...prev, [questionId]: newCount };
       });
       setStatuses((prev) => {
         if (prev[questionId] === 'solved') return prev;
-        setQuestionStatus(questionId, 'attempted');
+        if (persistLocally) setQuestionStatus(questionId, 'attempted');
         return { ...prev, [questionId]: 'attempted' };
       });
       if (wrongContext) {
         setLastWrongContext((prev) => ({ ...prev, [questionId]: wrongContext }));
       }
     }
-  }, []);
+  }, [user]);
 
   const handleTryAgain = useCallback(() => {
     setAttemptCounts((prev) => ({ ...prev, [selectedId]: 0 }));
-    setAttemptCount(selectedId, 0);
-  }, [selectedId]);
+    if (!user) setAttemptCount(selectedId, 0);
+  }, [selectedId, user]);
 
   const handleMarkSolved = useCallback(() => {
     setStatuses((prev) => ({ ...prev, [selectedId]: 'solved' }));
-    setQuestionStatus(selectedId, 'solved');
     setAttemptCounts((prev) => ({ ...prev, [selectedId]: 0 }));
-    setAttemptCount(selectedId, 0);
-  }, [selectedId]);
+    if (!user) {
+      setQuestionStatus(selectedId, 'solved');
+      setAttemptCount(selectedId, 0);
+    }
+  }, [selectedId, user]);
 
   const handleNextQuestion = useCallback(() => {
     const tierQuestions = questions.filter((q) => q.tier === selectedQuestion?.tier);

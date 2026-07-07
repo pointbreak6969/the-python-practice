@@ -23,6 +23,29 @@ function safeLocalStorage(): Storage | null {
   }
 }
 
+/** Wipes all guest data (progress, attempts, saved code, last session).
+ *  Called when a signed-in user loads the app — their progress lives server-side. */
+export function clearGuestData(): void {
+  try {
+    const ls = safeLocalStorage()
+    if (!ls) return
+    const doomed: string[] = []
+    for (let i = 0; i < ls.length; i++) {
+      const key = ls.key(i)
+      if (
+        key &&
+        (key.startsWith('qstatus:') ||
+          key.startsWith('qattempts:') ||
+          key.startsWith('qcode:') ||
+          key === 'session:last')
+      ) {
+        doomed.push(key)
+      }
+    }
+    doomed.forEach((k) => ls.removeItem(k))
+  } catch { /* unavailable */ }
+}
+
 export function getQuestionStatus(id: string): QuestionStatus {
   try {
     const ls = safeLocalStorage()
