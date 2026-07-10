@@ -51,7 +51,7 @@ export function UserMenu({ user }: { user: CurrentUser | null }) {
           <MenuLink href="/profile" onClick={() => setOpen(false)}>Profile</MenuLink>
           <MenuLink href="/leaderboard" onClick={() => setOpen(false)}>Leaderboard</MenuLink>
           {user.role === 'ADMIN' && (
-            <MenuLink href="/admin" onClick={() => setOpen(false)}>Admin</MenuLink>
+            <MenuLink href="/zxcvbn/admin" onClick={() => setOpen(false)}>Admin</MenuLink>
           )}
           <form action={signOutAction}>
             <button className="w-full rounded-lg px-3 py-2 text-left text-sm text-red hover:bg-red-100">

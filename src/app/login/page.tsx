@@ -10,6 +10,6 @@ export const dynamic = 'force-dynamic'
 
 export default async function LoginPage() {
   const user = await getCurrentUser()
-  if (user) redirect('/python')
+  if (user) redirect(user.role === 'ADMIN' ? '/zxcvbn/admin' : '/python')
   return <LoginClient />
 }

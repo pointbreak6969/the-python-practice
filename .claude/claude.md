@@ -22,8 +22,6 @@ SUPABASE_ANON_KEY=
 # Prisma — use the Supavisor SESSION pooler URL (port 5432); the direct
 # db.<ref>.supabase.co host is IPv6-only and unreachable from most networks:
 DATABASE_URL=postgresql://postgres.<ref>:<password>@aws-1-<region>.pooler.supabase.com:5432/postgres
-# Comma-separated emails granted the ADMIN role on first sign-in:
-ADMIN_EMAILS=
 # Dev-only (admin bulk insert endpoint):
 SUPABASE_SERVICE_ROLE_KEY=
 ADMIN_SECRET=
@@ -55,8 +53,8 @@ Python execution requires `SharedArrayBuffer` (cross-origin isolation). Chrome a
 | `/login` | Server → Client | Learner login/signup (Supabase Auth, email+password) + "continue as guest" |
 | `/leaderboard` | Server | Rankings from Prisma aggregates; `?lang=` and `?time=` filters |
 | `/profile` | Server | Signed-in user stats: cards, solved-by-tier, activity heatmap |
-| `/admin`, `/admin/questions` | Server → Client | Admin analytics + question CRUD (role-gated; dir is gitignored/local-only) |
-| `/admin/login` | Server → Client | Admin sign-in (rejects non-ADMIN accounts) |
+| `/zxcvbn/admin`, `/zxcvbn/admin/questions` | Server → Client | Admin analytics + question CRUD (role-gated; deliberately unlinked/obscure path) |
+| `/zxcvbn/admin-login` | Server → Client | Admin sign-in (rejects non-ADMIN accounts) |
 | `POST/PUT/DELETE /api/admin/questions` | API | Question CRUD via Prisma; requires session with ADMIN role |
 
 ### Data flow
@@ -89,7 +87,7 @@ Question ordering rule: `write_the_code` questions must be listed before `fill_i
 
 ### Auth & Prisma
 
-- Supabase Auth (email+password) via `@supabase/ssr`; session cookies refreshed in `src/proxy.ts`. Server actions in `src/lib/auth/actions.ts`; `getCurrentUser()` (`src/lib/auth/user.ts`) lazily creates a `profiles` row and grants ADMIN when the email is in `ADMIN_EMAILS`.
+- Supabase Auth (email+password) via `@supabase/ssr`; session cookies refreshed in `src/proxy.ts`. Server actions in `src/lib/auth/actions.ts`; `getCurrentUser()` (`src/lib/auth/user.ts`) lazily creates a `profiles` row; every account starts as `USER` and admins are promoted manually in the Supabase dashboard (`UPDATE profiles SET role='ADMIN'`).
 - Prisma 7 (`prisma/schema.prisma`, config in `prisma.config.ts` which loads `.env.local`): models `Profile`, `Attempt`, `Progress` plus introspected `questions`/`javascript_questions`/`sql_questions`. The pre-existing tables were baselined in `prisma/migrations/0_baseline` — never let `migrate dev` reset the schema. New tracking tables have RLS enabled with no policies (Prisma connects as owner; PostgREST cannot touch them).
 - Client singleton: `src/lib/prisma.ts` (pg driver adapter → Supavisor session pooler).
 

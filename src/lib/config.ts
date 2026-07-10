@@ -35,3 +35,19 @@ export const TIER_COLOR_VAR: Record<string, string> = {
   hard: 'var(--copper)',
   expert: 'var(--red)',
 };
+
+/** Languages the nav knows about — `live: false` renders a disabled "· soon" pill. */
+export const LANGUAGES = [
+  { slug: 'python', label: '🐍 Python', live: true },
+  { slug: 'javascript', label: 'JavaScript', live: true },
+  { slug: 'sql', label: 'SQL', live: true },
+  { slug: 'c', label: 'C', live: false },
+  { slug: 'pytorch', label: 'PyTorch', live: false },
+  { slug: 'numpy', label: 'NumPy', live: false },
+] as const;
+
+/** Any slug in this set is a real, known language — planned or live. Anything else is a 404. */
+export const KNOWN_LANGS = new Set<string>(LANGUAGES.map((l) => l.slug));
+
+/** Slugs with actual question content to fetch. */
+export const SUPPORTED_LANGS = new Set<string>(LANGUAGES.filter((l) => l.live).map((l) => l.slug));

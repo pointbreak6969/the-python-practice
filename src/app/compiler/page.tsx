@@ -1,9 +1,9 @@
-"use client";
+import { blockAdmins } from "@/lib/auth/admin";
+import CompilerStandalone from "./CompilerStandalone";
 
-import dynamic from "next/dynamic";
+export const dynamic = "force-dynamic";
 
-const Compiler = dynamic(() => import("@/components/Compiler"), { ssr: false });
-
-export default function CompilerPage() {
-  return <Compiler />;
+export default async function CompilerPage() {
+  await blockAdmins();
+  return <CompilerStandalone />;
 }

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/lib/auth/user'
+import { blockAdmins } from '@/lib/auth/admin'
 import { getUserStats } from '@/lib/leaderboard'
 import { TIER_LABELS, TIER_ORDER, TIER_COLOR_VAR } from '@/lib/config'
 import { Logo } from '@/components/brand/Logo'
@@ -19,6 +20,7 @@ function heatColor(count: number): string {
 }
 
 export default async function ProfilePage() {
+  await blockAdmins()
   const user = await getCurrentUser()
   if (!user) redirect('/login')
 

@@ -52,8 +52,10 @@ model sql_questions {
   created_at         DateTime? @default(now()) @db.Timestamptz(6)
 }
 
+/// Role is assigned manually (e.g. from the Supabase dashboard) — the app
+/// never exposes it in forms and every account starts as USER.
 enum Role {
-  LEARNER
+  USER
   ADMIN
 }
 
@@ -70,7 +72,7 @@ model Profile {
   email         String     @unique
   handle        String     @unique
   name          String?
-  role          Role       @default(LEARNER)
+  role          Role       @default(USER)
   points        Int        @default(0)
   currentStreak Int        @default(0) @map("current_streak")
   bestStreak    Int        @default(0) @map("best_streak")

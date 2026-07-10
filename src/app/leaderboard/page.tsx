@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { getCurrentUser } from '@/lib/auth/user'
+import { blockAdmins } from '@/lib/auth/admin'
 import {
   getLeaderboard,
   type LeaderboardLanguage,
@@ -37,6 +38,7 @@ interface Props {
 }
 
 export default async function LeaderboardPage({ searchParams }: Props) {
+  await blockAdmins()
   const params = await searchParams
   const lang = LANG_TABS.find((t) => t.param === (params.lang ?? ''))?.value
   const time: Timeframe = TIME_TABS.some((t) => t.value === params.time)

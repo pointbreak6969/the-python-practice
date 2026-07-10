@@ -1,13 +1,14 @@
+import { notFound } from 'next/navigation';
 import { getQuestions } from '@/lib/supabase/queries';
 import { getCurrentUser } from '@/lib/auth/user';
+import { blockAdmins } from '@/lib/auth/admin';
 import { getQuestionStatsByLanguage, type QuestionStats } from '@/lib/tracking';
 import { prisma } from '@/lib/prisma';
+import { KNOWN_LANGS, SUPPORTED_LANGS } from '@/lib/config';
 import DashboardClient from '@/components/DashboardClient';
 import type { Language, Question, QuestionStatus } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
-
-const SUPPORTED_LANGS = new Set<string>(['python', 'javascript', 'sql']);
 
 interface Props {
   params: Promise<{ lang: string }>;
@@ -21,7 +22,10 @@ const STATUS_MAP: Record<string, QuestionStatus> = {
 };
 
 export default async function LangPage({ params }: Props) {
+  await blockAdmins();
   const { lang } = await params;
+
+  if (!KNOWN_LANGS.has(lang)) notFound();
 
   const user = await getCurrentUser();
 

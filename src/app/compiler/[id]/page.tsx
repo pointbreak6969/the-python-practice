@@ -1,5 +1,6 @@
 import { getQuestions } from '@/lib/supabase/queries';
 import { getCurrentUser } from '@/lib/auth/user';
+import { blockAdmins } from '@/lib/auth/admin';
 import { prisma } from '@/lib/prisma';
 import HomeClient from '@/components/HomeClient';
 import type { Language, QuestionStatus } from '@/lib/types';
@@ -25,6 +26,7 @@ const STATUS_MAP: Record<string, QuestionStatus> = {
 };
 
 export default async function CompilerPage({ params }: Props) {
+  await blockAdmins();
   const { id } = await params;
   const language = detectLanguage(id);
 

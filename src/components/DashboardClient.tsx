@@ -9,22 +9,26 @@ import type { Question, Tier, QuestionStatus } from '@/lib/types';
 import type { CurrentUser } from '@/lib/auth/user';
 import type { QuestionStats } from '@/lib/tracking';
 import { getAllStatuses, getLastSession, clearGuestData } from '@/lib/storage';
-import { TIER_LABELS, TIER_ORDER, TIER_COLOR_VAR, TYPE_SHORT_LABELS } from '@/lib/config';
+import {
+  TIER_LABELS,
+  TIER_ORDER,
+  TIER_COLOR_VAR,
+  TYPE_SHORT_LABELS,
+  LANGUAGES,
+  SUPPORTED_LANGS,
+} from '@/lib/config';
 import { ProgressRing } from '@/components/ui/ProgressRing';
 import { Logo } from '@/components/brand/Logo';
 import { UserMenu } from '@/components/auth/UserMenu';
 import { GuestBanner } from '@/components/auth/GuestBanner';
 
-const LANGUAGES = [
-  { slug: 'python', label: '🐍 Python', live: true },
-  { slug: 'javascript', label: 'JavaScript', live: true },
-  { slug: 'sql', label: 'SQL', live: true },
-  { slug: 'c', label: 'C', live: false },
-  { slug: 'pytorch', label: 'PyTorch', live: false },
-  { slug: 'numpy', label: 'NumPy', live: false },
-];
-
-const SUPPORTED_LANGS = new Set(['python', 'javascript', 'sql']);
+/** Short tier names for narrow screens. */
+const TIER_SHORT_LABELS: Record<string, string> = {
+  simple: 'Simple',
+  intermediate: 'Inter',
+  hard: 'Hard',
+  expert: 'Expert',
+};
 
 const STATUS_FILTERS: { value: QuestionStatus | null; label: string }[] = [
   { value: null, label: 'All status' },
@@ -147,7 +151,7 @@ export default function DashboardClient({
             <Logo />
           </Link>
 
-          <nav className="ml-2 flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
+          <nav className="ml-2 flex min-w-0 flex-1 items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {LANGUAGES.map(({ slug, label, live }) =>
               live ? (
                 <Link
@@ -237,7 +241,7 @@ export default function DashboardClient({
                       setActiveTier(tier);
                       setActiveTopic(null);
                     }}
-                    className="flex items-center gap-3 rounded-2xl border bg-surface p-3.5 text-left hover:-translate-y-0.5"
+                    className="flex flex-col items-center gap-1.5 rounded-2xl border bg-surface p-3 text-center hover:-translate-y-0.5 md:flex-row md:gap-3 md:p-3.5 md:text-left"
                     style={{
                       borderColor: selected ? color : 'var(--line)',
                       borderWidth: 1.5,
@@ -245,20 +249,48 @@ export default function DashboardClient({
                     }}
                   >
                     <ProgressRing size={44} stroke={5} pct={pct} color={color} />
-                    <span className="min-w-0">
+                    <span className="min-w-0 max-w-full">
                       <span
-                        className="block truncate font-heading text-[15px] font-bold"
+                        className="block truncate font-heading text-[13.5px] font-bold md:text-[15px]"
                         style={{ color: selected ? color : 'var(--ink)' }}
                       >
-                        {TIER_LABELS[tier]}
+                        <span className="md:hidden">{TIER_SHORT_LABELS[tier]}</span>
+                        <span className="hidden md:inline">{TIER_LABELS[tier]}</span>
                       </span>
-                      <span className="font-mono text-[11px] text-ink-3">
-                        {solved} / {total} solved
+                      <span className="block whitespace-nowrap font-mono text-[10.5px] text-ink-3 md:text-[11px]">
+                        {solved}/{total} solved
                       </span>
                     </span>
                   </button>
                 );
               })}
+            </div>
+
+            {/* ── Mobile progress summary (right rail is desktop-only) ── */}
+            <div className="mt-4 flex items-center gap-4 rounded-2xl border border-line bg-surface p-4 shadow-[var(--shadow-sm)] lg:hidden">
+              <ProgressRing size={56} stroke={6} pct={overallPct} color="var(--blue)">
+                <span className="font-mono text-[12px] font-bold">{overallPct}%</span>
+              </ProgressRing>
+              <div className="min-w-0 flex-1">
+                <p className="text-[14px] font-semibold">
+                  {totalSolved} / {questions.length} solved
+                </p>
+                {user ? (
+                  <p className="text-[12px] text-ink-3">
+                    🔥 {user.currentStreak}-day streak · best {user.bestStreak}
+                  </p>
+                ) : (
+                  <p className="text-[12px] text-ink-3">progress saved on this device</p>
+                )}
+              </div>
+              {resumeQuestion && (
+                <Link
+                  href={`/compiler/${resumeQuestion.id}`}
+                  className="shrink-0 rounded-[9px] bg-copper px-3 py-1.5 text-[12.5px] font-semibold text-white hover:-translate-y-px"
+                >
+                  Continue →
+                </Link>
+              )}
             </div>
 
             {/* ── Main grid ── */}

@@ -8,7 +8,7 @@ export type CurrentUser = {
   email: string
   handle: string
   name: string | null
-  role: 'LEARNER' | 'ADMIN'
+  role: 'USER' | 'ADMIN'
   points: number
   currentStreak: number
   bestStreak: number
@@ -22,14 +22,6 @@ function baseHandle(user: User): string {
   return (fromName || fromEmail || 'learner').slice(0, 20) || 'learner'
 }
 
-function isAdminEmail(email: string): boolean {
-  return (process.env.ADMIN_EMAILS ?? '')
-    .split(',')
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean)
-    .includes(email.toLowerCase())
-}
-
 async function ensureProfile(user: User) {
   const existing = await prisma.profile.findUnique({ where: { id: user.id } })
   if (existing) return existing
@@ -40,13 +32,14 @@ async function ensureProfile(user: User) {
   for (let i = 0; i < 5; i++) {
     const handle = i === 0 ? base : `${base}${Math.floor(Math.random() * 10000)}`
     try {
+      // Everyone starts as USER; promote to ADMIN manually via the Supabase
+      // dashboard (UPDATE profiles SET role='ADMIN' WHERE email='...').
       return await prisma.profile.create({
         data: {
           id: user.id,
           email,
           handle,
           name: (user.user_metadata?.name as string | undefined) ?? null,
-          role: isAdminEmail(email) ? 'ADMIN' : 'LEARNER',
         },
       })
     } catch (e: unknown) {

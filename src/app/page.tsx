@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { blockAdmins } from '@/lib/auth/admin'
 import LandingClient, { type TopLearner } from './LandingClient'
 
 export const dynamic = 'force-dynamic'
@@ -10,6 +11,7 @@ const FALLBACK_TOP: TopLearner[] = [
 ]
 
 export default async function Home() {
+  await blockAdmins()
   let problemCount = 145
   let top: TopLearner[] = FALLBACK_TOP
 

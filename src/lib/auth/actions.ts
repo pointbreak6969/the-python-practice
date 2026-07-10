@@ -2,11 +2,16 @@
 
 import { redirect } from 'next/navigation'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { getCurrentUser } from '@/lib/auth/user'
 
 export type AuthFormState = {
   error?: string
   message?: string
 }
+
+/** Admins live in the admin area; everyone else practices. */
+const homeFor = (role: 'USER' | 'ADMIN' | undefined) =>
+  role === 'ADMIN' ? '/zxcvbn/admin' : '/python'
 
 function validEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -30,7 +35,8 @@ export async function signInAction(
       : error.message }
   }
 
-  redirect('/python')
+  const user = await getCurrentUser()
+  redirect(homeFor(user?.role))
 }
 
 export async function signUpAction(

@@ -2,10 +2,6 @@
 @import "tw-animate-css";
 @import "./shadcn-theme.css";
 
-/* /src/app/admin is gitignored (local-only pages) and Tailwind skips gitignored
-   files when scanning for utilities — force-include it. */
-@source "./admin";
-
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -280,6 +276,18 @@
   from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: none; }
 }
+@keyframes pp-bp-scan {
+  0%, 6%   { transform: translateY(0);     background: transparent; box-shadow: none; }
+  16%, 22% { transform: translateY(24px);  background: transparent; box-shadow: none; }
+  32%, 38% { transform: translateY(48px);  background: transparent; box-shadow: none; }
+  48%      { transform: translateY(72px);  background: transparent; box-shadow: none; }
+  52%      { background: var(--red); box-shadow: 0 0 0 0 rgba(192, 69, 59, 0.45); }
+  59%      { box-shadow: 0 0 0 7px rgba(192, 69, 59, 0); }
+  66%      { transform: translateY(72px);  background: var(--red); box-shadow: 0 0 0 0 rgba(192, 69, 59, 0); }
+  76%, 82% { transform: translateY(96px);  background: transparent; box-shadow: none; }
+  92%, 98% { transform: translateY(120px); background: transparent; box-shadow: none; }
+  100%     { transform: translateY(0);     background: transparent; box-shadow: none; }
+}
 
 .pp-screen {
   animation: pp-fade 0.4s ease both;
@@ -291,6 +299,12 @@
 }
 .pp-shake {
   animation: pp-shake 0.5s ease both;
+}
+.pp-bp-dot {
+  animation: pp-bp-scan 7s cubic-bezier(0.2, 0.7, 0.3, 1) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pp-bp-dot { animation: none; background: var(--red); transform: translateY(72px); }
 }
 
 /* Smooth interactive transitions everywhere (design: "smoothness is a priority") */
