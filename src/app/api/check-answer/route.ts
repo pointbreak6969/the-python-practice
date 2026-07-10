@@ -73,6 +73,7 @@ export async function POST(req: NextRequest) {
   const { data, error } = await getClient().rpc('check_answer', {
     question_id: questionId,
     user_answer: userAnswer,
+    language: lang,
   })
 
   if (error) {

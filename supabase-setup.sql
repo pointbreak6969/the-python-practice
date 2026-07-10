@@ -16,34 +16,92 @@ CREATE OR REPLACE VIEW public_questions AS
   SELECT id, tier, topic, type, question, explanation, created_at
   FROM questions;
 
--- 3. check_answer function
-CREATE OR REPLACE FUNCTION check_answer(question_id text, user_answer text)
-RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER AS
-$$
+-- 3. Output normaliser used by check_answer
+CREATE OR REPLACE FUNCTION normalize_python_output(raw text)
+RETURNS text LANGUAGE plpgsql IMMUTABLE AS $$
 DECLARE
-  correct_answer  text;
-  correct_alt     text;
-  normalized_user text;
+  line text;
+  lines text[];
+  result_lines text[] := '{}';
 BEGIN
-  SELECT answer, alternative_answer
-  INTO correct_answer, correct_alt
-  FROM questions
-  WHERE id = question_id;
+  IF raw IS NULL THEN RETURN ''; END IF;
+  -- Normalize all line-ending variants to LF
+  raw := replace(raw, E'\r\n', E'\n');
+  raw := replace(raw, E'\r',   E'\n');
+  -- Split, right-trim each line, rejoin
+  lines := string_to_array(raw, E'\n');
+  FOREACH line IN ARRAY lines LOOP
+    result_lines := array_append(result_lines, rtrim(line));
+  END LOOP;
+  raw := array_to_string(result_lines, E'\n');
+  -- Strip leading / trailing blank lines then outer whitespace
+  raw := btrim(raw, E'\n');
+  raw := trim(raw);
+  RETURN raw;
+END;
+$$;
+
+-- 4. check_answer function (language-aware: python/javascript/sql)
+CREATE OR REPLACE FUNCTION check_answer(
+  question_id text,
+  user_answer text,
+  language text DEFAULT 'python'
+)
+RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  q_type     text;
+  q_expected text;
+  q_answer   text;
+  q_alt      text;
+  norm_user  text;
+BEGIN
+  IF language = 'javascript' THEN
+    SELECT type, expected_output, answer, alternative_answer
+    INTO q_type, q_expected, q_answer, q_alt
+    FROM javascript_questions
+    WHERE id = question_id;
+  ELSIF language = 'sql' THEN
+    SELECT type, expected_output, answer, alternative_answer
+    INTO q_type, q_expected, q_answer, q_alt
+    FROM sql_questions
+    WHERE id = question_id;
+  ELSE
+    SELECT type, expected_output, answer, alternative_answer
+    INTO q_type, q_expected, q_answer, q_alt
+    FROM questions
+    WHERE id = question_id;
+  END IF;
 
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Question not found: %', question_id;
   END IF;
 
-  normalized_user := lower(trim(user_answer));
-  correct_answer  := lower(trim(correct_answer));
-  correct_alt     := lower(trim(coalesce(correct_alt, '')));
+  -- fill_in_the_blank: compare the extracted token directly
+  IF q_type = 'fill_in_the_blank' THEN
+    norm_user := lower(trim(user_answer));
+    IF norm_user = lower(trim(q_answer)) THEN RETURN true; END IF;
+    IF q_alt IS NOT NULL AND norm_user = lower(trim(q_alt)) THEN RETURN true; END IF;
+    RETURN false;
+  END IF;
 
-  RETURN normalized_user = correct_answer
-      OR (correct_alt <> '' AND normalized_user = correct_alt);
+  -- All other checked types: normalised stdout vs expected_output (or answer fallback)
+  IF q_expected IS NULL THEN
+    q_expected := q_answer;
+  END IF;
+
+  IF q_expected IS NULL THEN
+    RETURN false;
+  END IF;
+
+  norm_user := normalize_python_output(user_answer);
+
+  IF norm_user = normalize_python_output(q_expected) THEN RETURN true; END IF;
+  IF q_alt IS NOT NULL AND norm_user = normalize_python_output(q_alt) THEN RETURN true; END IF;
+  RETURN false;
 END;
 $$;
 
--- 4. Enable RLS — no direct anon access to the questions table (answers are in it)
+-- 5. Enable RLS — no direct anon access to the questions table (answers are in it)
 --    Unauthenticated clients must use public_questions view via the API.
 --    check_answer() is SECURITY DEFINER so it bypasses RLS internally.
 ALTER TABLE questions ENABLE ROW LEVEL SECURITY;
@@ -59,7 +117,7 @@ BEGIN
 END;
 $do$;
 
--- 5. Seed questions
+-- 6. Seed questions
 INSERT INTO questions (id, tier, topic, type, question, answer, alternative_answer, explanation)
 VALUES
   ($q$S001$q$, $q$simple$q$, $q$variables$q$, $q$write_the_code$q$, $q$Write code that stores the integer 7 in a variable called lucky_number and prints it.$q$, $q$lucky_number = 7

@@ -126,7 +126,7 @@ export async function getUserStats(userId: string, days = 70): Promise<UserStats
 
   try {
     const since = new Date(Date.now() - days * 86_400_000)
-    const [profile, totalAttempts, correctAttempts, solvedRows, tierTotals, recent] =
+    const [profile, totalAttempts, correctAttempts, solvedRows, tierTotalsGroups, recent] =
       await Promise.all([
         prisma.profile.findUnique({ where: { id: userId } }),
         prisma.attempt.count({ where: { userId } }),
@@ -135,27 +135,55 @@ export async function getUserStats(userId: string, days = 70): Promise<UserStats
           where: { userId, status: 'SOLVED' },
           select: { questionId: true, language: true },
         }),
-        prisma.questions.groupBy({ by: ['tier'], _count: { _all: true } }),
+        // Tier totals across all supported language tables.
+        Promise.all([
+          prisma.questions.groupBy({ by: ['tier'], _count: { _all: true } }),
+          prisma.javascript_questions.groupBy({ by: ['tier'], _count: { _all: true } }),
+          prisma.sql_questions.groupBy({ by: ['tier'], _count: { _all: true } }),
+        ]),
         prisma.attempt.findMany({
           where: { userId, createdAt: { gte: since } },
           select: { createdAt: true },
         }),
       ])
 
-    // Solved-by-tier (python questions only — tiers live in the questions table).
-    const pySolvedIds = solvedRows.filter((r) => r.language === 'python').map((r) => r.questionId)
-    const solvedTiers =
-      pySolvedIds.length > 0
-        ? await prisma.questions.findMany({
-            where: { id: { in: pySolvedIds } },
-            select: { tier: true },
-          })
-        : []
+    // Solved-by-tier across all languages.
+    const solvedByLanguage = new Map<string, string[]>()
+    for (const r of solvedRows) {
+      const ids = solvedByLanguage.get(r.language) ?? []
+      ids.push(r.questionId)
+      solvedByLanguage.set(r.language, ids)
+    }
+
+    const tierCounts = new Map<string, number>()
+    for (const [language, ids] of solvedByLanguage) {
+      if (ids.length === 0) continue
+      const rows =
+        language === 'javascript'
+          ? await prisma.javascript_questions.findMany({
+              where: { id: { in: ids } },
+              select: { tier: true },
+            })
+          : language === 'sql'
+            ? await prisma.sql_questions.findMany({
+                where: { id: { in: ids } },
+                select: { tier: true },
+              })
+            : await prisma.questions.findMany({
+                where: { id: { in: ids } },
+                select: { tier: true },
+              })
+      for (const q of rows) {
+        tierCounts.set(q.tier, (tierCounts.get(q.tier) ?? 0) + 1)
+      }
+    }
+
+    const tierTotals = tierTotalsGroups.flat()
     const solvedByTier = Object.fromEntries(
       TIER_ORDER.map((t) => [
         t,
         {
-          solved: solvedTiers.filter((q) => q.tier === t).length,
+          solved: tierCounts.get(t) ?? 0,
           total: tierTotals.find((g) => g.tier === t)?._count._all ?? 0,
         },
       ])

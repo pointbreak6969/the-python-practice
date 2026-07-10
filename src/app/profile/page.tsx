@@ -81,7 +81,7 @@ export default async function ProfilePage() {
           {/* Solved by tier */}
           <div className="rounded-2xl border border-line bg-surface p-5 shadow-[var(--shadow-sm)]">
             <p className="font-mono text-[11px] uppercase tracking-[.12em] text-ink-3">
-              Solved by tier · Python
+              Solved by tier · All languages
             </p>
             <div className="mt-4 flex flex-col gap-3.5">
               {TIER_ORDER.map((tier) => {

@@ -35,13 +35,13 @@ export async function recordAttempt(opts: {
     if (!userId) return null
 
     const existing = await prisma.progress.findUnique({
-      where: { userId_questionId: { userId, questionId } },
+      where: { userId_questionId_language: { userId, questionId, language } },
     })
     const alreadySolved = existing?.status === 'SOLVED'
     const firstSolve = correct && !alreadySolved
 
     await prisma.progress.upsert({
-      where: { userId_questionId: { userId, questionId } },
+      where: { userId_questionId_language: { userId, questionId, language } },
       create: {
         userId,
         questionId,

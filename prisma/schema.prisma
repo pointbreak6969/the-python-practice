@@ -112,7 +112,7 @@ model Progress {
   updatedAt  DateTime       @updatedAt @map("updated_at")
   user       Profile        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@id([userId, questionId])
+  @@id([userId, questionId, language])
   @@index([userId, language])
   @@map("question_progress")
 }

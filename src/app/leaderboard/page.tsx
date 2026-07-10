@@ -12,7 +12,21 @@ import { UserMenu } from '@/components/auth/UserMenu'
 
 export const dynamic = 'force-dynamic'
 
-export const metadata = { title: 'Leaderboard — PyPractice' }
+const LANG_LABEL: Record<string, string> = {
+  python: 'Python',
+  javascript: 'JavaScript',
+  sql: 'SQL',
+}
+
+export async function generateMetadata({ searchParams }: Props) {
+  const params = await searchParams
+  const label = params.lang ? LANG_LABEL[params.lang] : null
+  return {
+    title: label
+      ? `${label} Leaderboard — PyPractice`
+      : 'Leaderboard — PyPractice',
+  }
+}
 
 const LANG_TABS: { value: LeaderboardLanguage | undefined; label: string; param: string }[] = [
   { value: undefined, label: 'All langs', param: '' },
@@ -51,12 +65,15 @@ export default async function LeaderboardPage({ searchParams }: Props) {
   ])
 
   const you = user ? rows.find((r) => r.userId === user.id) : undefined
-  const podium = rows.slice(0, 3)
-  const rest = rows.slice(3)
+  const showPodium = rows.length >= 3
+  const podium = showPodium ? rows.slice(0, 3) : []
+  const rest = showPodium ? rows.slice(3) : rows
   const timeWord = time === 'week' ? 'this week' : time === 'month' ? 'this month' : 'all-time'
 
   const href = (l: string, t: Timeframe) =>
     `/leaderboard?${new URLSearchParams({ ...(l ? { lang: l } : {}), time: t }).toString()}`
+  const dashboardHref = `/${lang ?? 'python'}`
+  const practiceHref = `/${lang ?? 'python'}`
 
   return (
     <div className="pp-screen min-h-[100dvh] bg-background text-foreground">
@@ -66,7 +83,7 @@ export default async function LeaderboardPage({ searchParams }: Props) {
             <Link href="/">
               <Logo />
             </Link>
-            <Link href="/python" className="text-[14px] text-ink-2 hover:text-ink">
+            <Link href={dashboardHref} className="text-[14px] text-ink-2 hover:text-ink">
               ← Dashboard
             </Link>
           </div>
@@ -77,7 +94,7 @@ export default async function LeaderboardPage({ searchParams }: Props) {
       <main className="mx-auto max-w-[820px] px-4 pb-20 sm:px-7">
         <div className="mt-9 text-center">
           <h1 className="font-heading text-[26px] font-bold tracking-[-0.01em]">
-            The climb, ranked.
+            {lang ? `${LANG_LABEL[lang]} leaderboard` : 'The climb, ranked.'}
           </h1>
           <p className="mt-1 text-[14px] text-ink-2">
             {rows.length} learner{rows.length === 1 ? '' : 's'} competing {timeWord}
@@ -124,7 +141,7 @@ export default async function LeaderboardPage({ searchParams }: Props) {
               Be the first on the board — solve a problem!
             </p>
             <Link
-              href="/python"
+              href={practiceHref}
               className="mt-5 inline-block rounded-[9px] bg-blue px-4 py-2 text-[13px] font-semibold text-on-blue hover:bg-blue-600"
             >
               Start practicing
@@ -133,7 +150,7 @@ export default async function LeaderboardPage({ searchParams }: Props) {
         ) : (
           <>
             {/* Podium */}
-            {podium.length === 3 && (
+            {podium.length > 0 && (
               <div className="mt-10 flex items-end justify-center gap-4">
                 {[1, 0, 2].map((idx) => {
                   const r = podium[idx]
@@ -221,7 +238,7 @@ export default async function LeaderboardPage({ searchParams }: Props) {
                 @{user.handle} — no attempts {timeWord} yet. Solve something to enter the board!
               </div>
             )}
-            {you && you.rank > 3 && rest.every((r) => r.userId !== you.userId) && (
+            {you && you.rank > 3 && (
               <div
                 className={`${GRID} mt-4 rounded-2xl border-[1.5px] border-copper bg-copper-050 px-4 py-3 text-copper`}
               >
