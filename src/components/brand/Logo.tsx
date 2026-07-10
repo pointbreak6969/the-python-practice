@@ -1,11 +1,11 @@
 import { cn } from '@/lib/utils'
 
-/** `>_` glyph in a blue rounded square + "PyPractice" wordmark. */
+/** `PL` glyph in a blue rounded square + "Programming Learner" wordmark. */
 export function Logo({ dark = false, compact = false }: { dark?: boolean; compact?: boolean }) {
   return (
     <span className="inline-flex items-center gap-2">
       <span className="grid size-[26px] place-items-center rounded-[7px] bg-blue font-mono text-[13px] font-bold text-on-blue">
-        &gt;_
+        PL
       </span>
       {!compact && (
         <span
@@ -14,7 +14,7 @@ export function Logo({ dark = false, compact = false }: { dark?: boolean; compac
             dark ? 'text-[#F1ECDF]' : 'text-ink'
           )}
         >
-          PyPractice
+          Programming Learner
         </span>
       )}
     </span>

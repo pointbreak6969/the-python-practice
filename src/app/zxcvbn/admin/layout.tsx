@@ -10,7 +10,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="flex min-h-[100dvh] bg-background text-foreground">
       {/* Sidebar */}
-      <aside className="hidden w-[210px] shrink-0 flex-col bg-code-bg p-4 md:flex">
+      <aside className="sticky top-0 hidden h-[100dvh] w-[210px] shrink-0 flex-col bg-code-bg p-4 md:flex">
         <Link href="/" className="px-1">
           <Logo dark />
         </Link>

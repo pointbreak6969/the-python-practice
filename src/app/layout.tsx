@@ -21,9 +21,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PyPractice — Write code. Learn like a senior.",
+  title: "Programming Learner — Write code. Learn like a senior.",
   description:
-    "Practice Python, JavaScript and SQL with instant in-browser execution, auto-checked answers, and AI hints when you're stuck. No setup, ever.",
+    "Programming Learner helps you practice Python, JavaScript and SQL with instant in-browser execution, auto-checked answers, and AI hints when you're stuck. No setup, ever.",
 };
 
 export default function RootLayout({
