@@ -1,7 +1,7 @@
 import { getQuestions } from '@/lib/supabase/queries';
 import { getCurrentUser } from '@/lib/auth/user';
 import { blockAdmins } from '@/lib/auth/admin';
-import { prisma } from '@/lib/prisma';
+import { getServerProgress } from '@/lib/progress';
 import HomeClient from '@/components/HomeClient';
 import type { Language, QuestionStatus } from '@/lib/types';
 
@@ -17,13 +17,6 @@ function detectLanguage(id: string): Language {
   if (upper.startsWith('JS')) return 'javascript';
   return 'python';
 }
-
-const STATUS_MAP: Record<string, QuestionStatus> = {
-  NOT_STARTED: 'not_started',
-  ATTEMPTED: 'attempted',
-  SOLVED: 'solved',
-  SKIPPED: 'skipped',
-};
 
 export default async function CompilerPage({ params }: Props) {
   await blockAdmins();
@@ -53,20 +46,9 @@ export default async function CompilerPage({ params }: Props) {
   let serverAttemptCounts: Record<string, number> = {};
   if (user) {
     try {
-      const progress = await prisma.progress.findMany({
-        where: { userId: user.id, language },
-        select: { questionId: true, status: true, attempts: true },
-      });
-      serverStatuses = Object.fromEntries(
-        progress.map((p) => [p.questionId, STATUS_MAP[p.status] ?? 'not_started'])
-      );
-      serverAttemptCounts = Object.fromEntries(
-        // Only unsolved questions carry an attempt counter into the assist
-        // ladder — solved ones start fresh if revisited.
-        progress
-          .filter((p) => p.status === 'ATTEMPTED')
-          .map((p) => [p.questionId, p.attempts])
-      );
+      const progress = await getServerProgress(user.id, language);
+      serverStatuses = progress.statuses;
+      serverAttemptCounts = progress.attemptCounts;
     } catch (e) {
       console.error('[compiler] progress fetch failed', e);
     }
