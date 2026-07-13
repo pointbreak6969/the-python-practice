@@ -21,6 +21,23 @@ async function findQuestion(id: string, language: Language): Promise<QuestionRow
 }
 
 /**
+ * Find which language table a question id belongs to.
+ * Queries all three tables in parallel — no ID-prefix guessing.
+ * Returns `null` if the id doesn't exist in any table.
+ */
+export async function findQuestionLanguage(id: string): Promise<Language | null> {
+  const [py, js, sq] = await Promise.all([
+    prisma.questions.findUnique({ where: { id }, select: { id: true } }),
+    prisma.javascript_questions.findUnique({ where: { id }, select: { id: true } }),
+    prisma.sql_questions.findUnique({ where: { id }, select: { id: true } }),
+  ]);
+  if (py) return 'python';
+  if (js) return 'javascript';
+  if (sq) return 'sql';
+  return null;
+}
+
+/**
  * Server-side answer check (replaces the Supabase `check_answer` RPC).
  *
  * - `fill_in_the_blank`: case-insensitive trimmed token match against answer / alternative_answer.

@@ -2,8 +2,10 @@ import { getQuestions } from '@/lib/supabase/queries';
 import { getCurrentUser } from '@/lib/auth/user';
 import { blockAdmins } from '@/lib/auth/admin';
 import { getServerProgress } from '@/lib/progress';
+import { findQuestionLanguage } from '@/lib/answer-check';
+import { notFound } from 'next/navigation';
 import HomeClient from '@/components/HomeClient';
-import type { Language, QuestionStatus } from '@/lib/types';
+import type { QuestionStatus } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,17 +13,12 @@ interface Props {
   params: Promise<{ id: string }>;
 }
 
-function detectLanguage(id: string): Language {
-  const upper = id.toUpperCase();
-  if (upper.startsWith('SQL')) return 'sql';
-  if (upper.startsWith('JS')) return 'javascript';
-  return 'python';
-}
-
 export default async function CompilerPage({ params }: Props) {
   await blockAdmins();
   const { id } = await params;
-  const language = detectLanguage(id);
+
+  const language = await findQuestionLanguage(id);
+  if (!language) notFound();
 
   let questions;
   try {
