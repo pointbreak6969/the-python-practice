@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getClient } from '@/lib/supabase/client'
 import { getCurrentUser } from '@/lib/auth/user'
 import { recordAttempt } from '@/lib/tracking'
 import { getClientIp, makeRateLimiter } from '@/lib/api/rate-limit'
+import { checkAnswerServer } from '@/lib/answer-check'
+import type { Language } from '@/lib/types'
 
 const LANGUAGES = new Set(['python', 'javascript', 'sql'])
 
@@ -38,8 +39,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
   }
 
-  // Client-checked types (SQL/JS write_the_code) supply `correct` directly and skip the RPC.
-  // Server-checked types omit `correct` and must provide `userAnswer` for the Supabase RPC.
+  // Client-checked types (SQL/JS write_the_code) supply `correct` directly and skip server check.
+  // Server-checked types omit `correct` and must provide `userAnswer` for the comparison.
   let correct: boolean
   if (typeof clientCorrect === 'boolean') {
     correct = clientCorrect
@@ -48,17 +49,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
     }
 
-    const { data, error } = await getClient().rpc('check_answer', {
-      question_id: questionId,
-      user_answer: userAnswer,
-    })
-
-    if (error) {
-      console.error('[check-answer]', error.message)
+    try {
+      correct = await checkAnswerServer(questionId, userAnswer, language as Language)
+    } catch (err) {
+      console.error('[check-answer]', err)
       return NextResponse.json({ error: 'Could not verify answer' }, { status: 500 })
     }
-
-    correct = typeof data === 'boolean' ? data : false
   }
 
   const user = await getCurrentUser()

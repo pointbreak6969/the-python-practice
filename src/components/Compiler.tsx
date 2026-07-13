@@ -9,7 +9,7 @@ import { ResizableSplit } from "@/components/ResizableSplit";
 import { WorkerBridge, OutputLine, WorkerConfig } from "@/components/execution/worker-bridge";
 import { AUTO_CHECK_TYPES, JS_STARTER_CODE, SQL_STARTER_CODE, STARTER_CODE } from "@/lib/config";
 import { setSavedCode } from "@/lib/storage";
-import { debounce } from "@/lib/utils";
+import { debounce, normalizeOutput } from "@/lib/utils";
 import { reportAttempt } from "@/lib/report-attempt";
 import type { SolveReward } from "@/lib/tracking";
 import { parseSqlQuestion } from "@/lib/sql/parse";
@@ -66,17 +66,6 @@ interface CompilerProps {
 let _lineId = 0;
 function mkLine(text: string, type: OutputLine["type"]): OutputLine {
   return { id: String(_lineId++), text, type };
-}
-
-/** Trim trailing whitespace per line then trim leading/trailing blank lines. */
-function normalizeOutput(raw: string): string {
-  return raw
-    .replace(/\r\n/g, '\n')
-    .replace(/\r/g, '\n')
-    .split('\n')
-    .map((l) => l.trimEnd())
-    .join('\n')
-    .trim();
 }
 
 /**
