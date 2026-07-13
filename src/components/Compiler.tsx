@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import OutputPanel from "@/components/OutputPanel";
 import OutputPredictionPanel from "@/components/OutputPredictionPanel";
 import CompilerToolbar from "@/components/CompilerToolbar";
+import { ResizableSplit } from "@/components/ResizableSplit";
 import { WorkerBridge, OutputLine, WorkerConfig } from "@/components/execution/worker-bridge";
 import { AUTO_CHECK_TYPES, JS_STARTER_CODE, SQL_STARTER_CODE, STARTER_CODE } from "@/lib/config";
 import { setSavedCode } from "@/lib/storage";
@@ -148,10 +149,6 @@ const Compiler = forwardRef<CompilerHandle, CompilerProps>(function Compiler(
   const [hasRun, setHasRun] = useState(false);
   const [userPrediction, setUserPrediction] = useState('');
 
-  // Panel split — percentage for editor width
-  const [split, setSplit] = useState(60);
-  const dragging = useRef(false);
-  const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<EditorPanelHandle>(null);
   const bridgeRef = useRef<WorkerBridge | null>(null);
   const pendingOutputRef = useRef<string>('');
@@ -374,28 +371,6 @@ const Compiler = forwardRef<CompilerHandle, CompilerProps>(function Compiler(
     }
   }, [question?.id]);
 
-  // Resizable drag handle
-  const onMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    dragging.current = true;
-  };
-
-  useEffect(() => {
-    const onMouseMove = (e: MouseEvent) => {
-      if (!dragging.current || !containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const pct = ((e.clientX - rect.left) / rect.width) * 100;
-      setSplit(Math.min(80, Math.max(20, pct)));
-    };
-    const onMouseUp = () => { dragging.current = false; };
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", onMouseUp);
-    return () => {
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onMouseUp);
-    };
-  }, []);
-
   const isPredictionType =
     question?.type === 'output_prediction' || question?.type === 'what_is_the_result';
 
@@ -444,9 +419,8 @@ const Compiler = forwardRef<CompilerHandle, CompilerProps>(function Compiler(
         />
       ) : (
         /* Editor + Output split */
-        <div ref={containerRef} className="flex flex-1 overflow-hidden md:flex-row flex-col">
-          {/* Editor panel */}
-          <div style={{ flexBasis: `${split}%` }} className="min-w-0 overflow-hidden min-h-[240px] md:min-h-0">
+        <ResizableSplit
+          left={
             <EditorPanel
               key={question?.id ?? 'default'}
               ref={editorRef}
@@ -455,23 +429,15 @@ const Compiler = forwardRef<CompilerHandle, CompilerProps>(function Compiler(
               onRun={handleRun}
               language={language}
             />
-          </div>
-
-          {/* Drag handle */}
-          <div
-            onMouseDown={onMouseDown}
-            className="w-1 bg-border hover:bg-primary cursor-col-resize hidden md:block shrink-0 transition-colors"
-          />
-
-          {/* Output panel */}
-          <div style={{ flexBasis: `${100 - split}%` }} className="min-w-0 overflow-hidden min-h-[180px] md:min-h-0">
+          }
+          right={
             <OutputPanel
               lines={output}
               inputPrompt={inputPrompt}
               onInputSubmit={handleInputSubmit}
             />
-          </div>
-        </div>
+          }
+        />
       )}
     </div>
   );
