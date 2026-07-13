@@ -1,35 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth/user'
 import { recordAttempt } from '@/lib/tracking'
+import { getClientIp, makeRateLimiter } from '@/lib/api/rate-limit'
 
 // Records attempts for question types that are checked client-side
 // (SQL / JavaScript write_the_code run entirely in the browser).
 
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
-const RATE_LIMIT = 30
-const WINDOW_MS = 60_000
+const checkRateLimit = makeRateLimiter(30)
 const LANGUAGES = new Set(['python', 'javascript', 'sql'])
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now()
-  const entry = rateLimitMap.get(ip)
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + WINDOW_MS })
-    return true
-  }
-  if (entry.count >= RATE_LIMIT) return false
-  entry.count++
-  return true
-}
-
-function getClientIp(req: NextRequest): string {
-  return (
-    req.headers.get('cf-connecting-ip') ??
-    req.headers.get('x-real-ip') ??
-    req.headers.get('x-forwarded-for')?.split(',').at(-1)?.trim() ??
-    'unknown'
-  )
-}
 
 export async function POST(req: NextRequest) {
   if (!checkRateLimit(getClientIp(req))) {
