@@ -34,7 +34,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
   }
 
-  const lang = typeof language === 'string' && LANGUAGES.has(language) ? language : 'python'
+  if (typeof language !== 'string' || !LANGUAGES.has(language)) {
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+  }
+  const lang = language
 
   if (questionId.length === 0 || questionId.length > MAX_QUESTION_ID_LENGTH) {
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
@@ -62,7 +65,8 @@ export async function POST(req: NextRequest) {
   const reward = await recordAttempt({
     userId: user?.id ?? null,
     questionId,
-    language: lang,   correct,
+    language: lang,
+    correct,
   })
 
   return NextResponse.json({ correct, reward })
