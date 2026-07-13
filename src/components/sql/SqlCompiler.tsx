@@ -10,6 +10,7 @@ import { usePglite } from './usePglite';
 import { parseSqlQuestion } from '@/lib/sql/parse';
 import { SQL_STARTER_CODE } from '@/lib/config';
 import { setSavedCode } from '@/lib/storage';
+import { debounce } from '@/lib/utils';
 import { reportAttempt } from '@/lib/report-attempt';
 import type { SolveReward } from '@/lib/tracking';
 import type { Question } from '@/lib/types';
@@ -39,14 +40,6 @@ const EditorPanel = dynamic(() => import('@/components/EditorPanel'), {
     </div>
   ),
 });
-
-function debounce<T extends unknown[]>(fn: (...args: T) => void, ms: number) {
-  let t: ReturnType<typeof setTimeout>;
-  return (...args: T) => {
-    clearTimeout(t);
-    t = setTimeout(() => fn(...args), ms);
-  };
-}
 
 const SqlCompiler = forwardRef<CompilerHandle, Props>(function SqlCompiler(
   { question, initialCode, onAttempt, onStatusChange, hintProps },

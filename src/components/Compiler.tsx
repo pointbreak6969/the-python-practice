@@ -8,6 +8,7 @@ import CompilerToolbar from "@/components/CompilerToolbar";
 import { WorkerBridge, OutputLine, WorkerConfig } from "@/components/execution/worker-bridge";
 import { AUTO_CHECK_TYPES, JS_STARTER_CODE, SQL_STARTER_CODE, STARTER_CODE } from "@/lib/config";
 import { setSavedCode } from "@/lib/storage";
+import { debounce } from "@/lib/utils";
 import { reportAttempt } from "@/lib/report-attempt";
 import type { SolveReward } from "@/lib/tracking";
 import { parseSqlQuestion } from "@/lib/sql/parse";
@@ -119,14 +120,6 @@ function extractFilledToken(questionText: string, userCode: string): string {
   return tokens.join(', ');
 }
 
-function debounce<T extends unknown[]>(fn: (...args: T) => void, ms: number) {
-  let t: ReturnType<typeof setTimeout>;
-  return (...args: T) => {
-    clearTimeout(t);
-    t = setTimeout(() => fn(...args), ms);
-  };
-}
-
 const Compiler = forwardRef<CompilerHandle, CompilerProps>(function Compiler(
   { question, initialCode, onAttempt, onStatusChange, hintProps },
   ref
@@ -166,7 +159,6 @@ const Compiler = forwardRef<CompilerHandle, CompilerProps>(function Compiler(
   const currentQuestionRef = useRef<Question | null | undefined>(question);
   const runningQuestionRef = useRef<Question | null | undefined>(null);
   const onAttemptRef = useRef(onAttempt);
-  const setOutputRef = useRef(setOutput);
 
   const codeRef = useRef(code);
   const userPredictionRef = useRef(userPrediction);
@@ -189,10 +181,6 @@ const Compiler = forwardRef<CompilerHandle, CompilerProps>(function Compiler(
   useEffect(() => {
     onAttemptRef.current = onAttempt;
   }, [onAttempt]);
-
-  useEffect(() => {
-    setOutputRef.current = setOutput;
-  }, [setOutput]);
 
   // Reset editor and output when question changes
   useEffect(() => {
@@ -342,7 +330,7 @@ const Compiler = forwardRef<CompilerHandle, CompilerProps>(function Compiler(
         .catch((err: unknown) => {
           // Network/timeout errors must not count as a wrong attempt
           const isTimeout = err instanceof Error && err.name === 'TimeoutError';
-          setOutputRef.current?.((prev) => [
+          setOutput((prev) => [
             ...prev,
             mkLine(
               isTimeout
