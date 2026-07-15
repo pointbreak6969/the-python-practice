@@ -296,7 +296,7 @@ Questions are also tagged per language. The nav declares known/live languages; a
 
 ```ts
 export const LANGUAGES = [
-  { slug: 'python', label: '🐍 Python', live: true },
+  { slug: 'python', label: ' Python', live: true },
   { slug: 'javascript', label: 'JavaScript', live: true },
   { slug: 'sql', label: 'SQL', live: true },
   { slug: 'c', label: 'C', live: false },
