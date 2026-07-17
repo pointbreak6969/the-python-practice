@@ -1,6 +1,6 @@
 # Programming Learner
 
-An interactive coding practice platform built with Next.js, supporting Python, JavaScript, and SQL exercises with in-browser execution. Questions are stored in PostgreSQL (read via Supabase, written via Prisma); all guest progress is persisted locally in `localStorage` — no account required.
+An interactive coding practice platform built with Next.js, supporting Python exercises with in-browser execution. Questions are stored in PostgreSQL (read via Supabase, written via Prisma); all guest progress is persisted locally in `localStorage` — no account required.
 
 ![Next.js](https://img.shields.io/badge/Next.js-16-black) ![React](https://img.shields.io/badge/React-19-blue) ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue) ![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38bdf8) ![Supabase](https://img.shields.io/badge/Supabase-green)
 
@@ -8,8 +8,8 @@ An interactive coding practice platform built with Next.js, supporting Python, J
 
 ## Features
 
-- **Multi-language support** — Python (via Pyodide WASM), JavaScript (via sandboxed `eval`), and SQL (via PGlite WASM)
-- **Five question types** — write the code, fill in the blank, output prediction, spot the bug, what is the result
+
+- **Four question types** — write the code, fill in the blank, output prediction, spot the bug,
 - **Four difficulty tiers** — Simple, Intermediate, Hard, Expert
 - **AI hints** — optional OpenRouter integration for contextual hints
 - **Progress tracking** — attempt counts, statuses, and code drafts saved in `localStorage`
