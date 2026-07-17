@@ -1,4 +1,4 @@
-# The Python Practice
+# Programming Learner
 
 An interactive coding practice platform built with Next.js, supporting Python, JavaScript, and SQL exercises with in-browser execution. Questions are stored in PostgreSQL (read via Supabase, written via Prisma); all guest progress is persisted locally in `localStorage` — no account required.
 
